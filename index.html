@@ -43,16 +43,16 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei',
-               'Hiragino Sans GB', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+               'Hiragino Sans GB', sans-serif;
   background: var(--bg); color: var(--text);
   min-height: 100vh; font-size: 15px; line-height: 1.55;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Japanese content: JP font first */
+/* Japanese content: JP font first, no fallback to JP fonts for CN glyphs */
 .c-frame, .c-ja, .vj, .vk {
   font-family: 'Yu Gothic UI', 'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP',
-               'PingFang SC', 'Microsoft YaHei', sans-serif;
+               'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
 }
 
 /* HEADER */
@@ -531,8 +531,8 @@ function vocabHtml(card) {
     const cls = ['vchip', m && 'mastered', m && st.hide && 'mastered-hidden'].filter(Boolean).join(' ');
     return `<div class="${cls}" data-cid="${card.id}" data-vj="${v.j}" title="点击朗读">
       <div class="vchip-body">
-        <span class="vj">${v.j}</span>
-        <span class="vk">${v.k} <span class="vc">${v.c}</span></span>
+        <span class="vj" lang="ja">${v.j}</span>
+        <span class="vk" lang="ja">${v.k} <span class="vc">${v.c}</span></span>
       </div>
       <button class="vchip-star${m?' on':''}" data-action="master" data-cid="${card.id}" data-vj="${v.j}" title="标记已掌握">✓</button>
     </div>`;
@@ -549,7 +549,7 @@ function cardHtml(c, showTags) {
   const tags = (pt || sc) ? `<div class="c-tags">${pt}${sc}</div>` : '';
   return `<div class="card" data-cid="${c.id}">
     <div class="card-front">
-      <div class="c-frame">${c.frame}</div>
+      <div class="c-frame" lang="ja">${c.frame}</div>
       <div class="c-cn">${c.cn}</div>
       <div class="c-hint">
         <svg width="9" height="9" viewBox="0 0 9 9"><polygon points="1,0.5 8.5,4.5 1,8.5" fill="currentColor"/></svg>
@@ -560,7 +560,7 @@ function cardHtml(c, showTags) {
       <div class="card-back-inner">
         <div class="card-back-content">
           <div class="back-lbl">日语例句 <span class="tts-hint">🔊 点击朗读</span></div>
-          <div class="c-ja">${c.ja}</div>
+          <div class="c-ja" lang="ja">${c.ja}</div>
           <div class="c-en">${c.en}</div>
           ${vocabHtml(c)}
           ${tags}
