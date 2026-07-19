@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh" data-theme="light">
+<html lang="zh-Hans" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -352,7 +352,8 @@ input[type=checkbox] { accent-color: var(--acc); }
   <div class="drawer-title">🔊 语音设置</div>
   <div class="drawer-desc">
     输入 OpenAI API Key，日语和英语将使用 AI 语音朗读（质量大幅提升）。<br>
-    Key 仅保存在本设备浏览器中，不会上传到任何服务器。
+    Key 仅保存在本设备浏览器中，不会上传到任何服务器。<br>
+    <span id="key-active-hint" style="font-size:12px"></span>
   </div>
   <div class="fg" style="margin-top:16px">
     <label>OpenAI API Key</label>
@@ -821,13 +822,16 @@ async function speak(text, lang, el) {
 async function speakOpenAI(text, lang, el) {
   if (el) el.classList.add('speaking');
   try {
-    const voice = lang.startsWith('ja') ? 'nova' : 'alloy';
+    const voice = lang.startsWith('ja') ? 'nova' : 'shimmer';
     const res = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + st.openaiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'tts-1', input: text, voice })
+      body: JSON.stringify({ model: 'tts-1-hd', input: text, voice })
     });
-    if (!res.ok) throw new Error(res.status);
+    if (!res.ok) {
+      const msg = await res.text().catch(() => res.status);
+      throw new Error(msg);
+    }
     const url = URL.createObjectURL(await res.blob());
     _audio = new Audio(url);
     _audio.onended = _audio.onerror = () => {
@@ -838,8 +842,43 @@ async function speakOpenAI(text, lang, el) {
   } catch(err) {
     console.error('OpenAI TTS:', err);
     if (el) el.classList.remove('speaking');
+    showTtsError(String(err));
     speakBrowser(text, lang, el);
   }
+}
+
+function showTtsError(msg) {
+  let tip = document.getElementById('tts-err-tip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'tts-err-tip';
+    tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;z-index:9999;max-width:90vw;word-break:break-all;';
+    document.body.appendChild(tip);
+  }
+  tip.textContent = 'AI语音失败，已回退浏览器TTS：' + msg;
+  tip.style.display = 'block';
+  clearTimeout(tip._t);
+  tip._t = setTimeout(() => { tip.style.display = 'none'; }, 5000);
+}
+
+function getBrowserVoice(lang) {
+  const voices = window.speechSynthesis.getVoices();
+  const prefix = lang.split('-')[0];
+  const pool = voices.filter(v => v.lang.startsWith(prefix));
+  if (!pool.length) return null;
+  if (prefix === 'ja') {
+    return pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name) && /Online|Natural/i.test(v.name))
+      || pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name))
+      || pool.find(v => /Online|Natural/i.test(v.name))
+      || pool[0];
+  }
+  if (prefix === 'en') {
+    return pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name) && /Online|Natural/i.test(v.name))
+      || pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name))
+      || pool.find(v => /Online|Natural/i.test(v.name))
+      || pool[0];
+  }
+  return pool[0];
 }
 
 function speakBrowser(text, lang, el) {
@@ -851,9 +890,7 @@ function speakBrowser(text, lang, el) {
   let fired = false;
   function go() {
     if (fired) return; fired = true;
-    const voices = window.speechSynthesis.getVoices();
-    const prefix = lang.split('-')[0];
-    const voice = voices.find(v => v.lang.startsWith(prefix));
+    const voice = getBrowserVoice(lang);
     if (voice) u.voice = voice;
     window.speechSynthesis.speak(u);
   }
@@ -862,7 +899,7 @@ function speakBrowser(text, lang, el) {
     go();
   } else {
     window.speechSynthesis.onvoiceschanged = go;
-    setTimeout(go, 500); // Android fallback: fire anyway if event never comes
+    setTimeout(go, 500);
   }
 }
 
@@ -872,6 +909,10 @@ function openSettings() {
   document.getElementById('s-drawer').classList.add('open');
   document.getElementById('key-input').value = st.openaiKey;
   document.getElementById('key-status').style.display = 'none';
+  const hint = document.getElementById('key-active-hint');
+  if (hint) hint.innerHTML = st.openaiKey
+    ? '<span style="color:#27ae60">✓ 当前已启用 AI 语音（tts-1-hd · nova/shimmer）</span>'
+    : '<span style="color:#888">未设置，将使用浏览器内置语音</span>';
 }
 function closeSettings() {
   document.getElementById('s-overlay').classList.remove('open');
