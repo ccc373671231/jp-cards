@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>口語語料庫</title>
+<style>
+:root {
+  --bg:   #f5f1ec;
+  --bg2:  #ebe5dc;
+  --card: #ffffff;
+  --bd:   #ddd7ce;
+  --text: #28231e;
+  --mute: #8a8078;
+  --acc:  #4e7ca1;
+  --acc2: #e8f1f8;
+  --grn:  #4d8c6f;
+  --grn2: #e6f4ec;
+  --amb:  #b5722a;
+  --amb2: #fdf0e0;
+  --sh:   0 1px 4px rgba(0,0,0,.06), 0 3px 10px rgba(0,0,0,.05);
+  --r:    13px;
+}
+[data-theme=dark] {
+  --bg:   #181824;
+  --bg2:  #1e1e2c;
+  --card: #252538;
+  --bd:   #38385a;
+  --text: #e0dbd4;
+  --mute: #8888a8;
+  --acc:  #7aabcf;
+  --acc2: #1c2a3a;
+  --grn:  #6ab890;
+  --grn2: #192e24;
+  --amb:  #d4953e;
+  --amb2: #2e2014;
+  --sh:   0 1px 4px rgba(0,0,0,.3), 0 3px 10px rgba(0,0,0,.25);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP', -apple-system, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; font-size: 15px; line-height: 1.55;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* HEADER */
+header {
+  position: sticky; top: 0; z-index: 200;
+  background: var(--card); border-bottom: 1px solid var(--bd);
+  padding: 13px 18px; display: flex; align-items: center;
+  justify-content: space-between; box-shadow: var(--sh);
+}
+.h-title { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+.h-sub { font-size: 11px; color: var(--mute); margin-top: 2px; }
+#themeBtn {
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 20px; padding: 5px 14px; font-size: 14px;
+  cursor: pointer; color: var(--text); font-family: inherit;
+}
+
+/* TABS */
+.tab-nav {
+  position: sticky; top: 58px; z-index: 190;
+  background: var(--card); border-bottom: 1px solid var(--bd);
+  display: flex;
+}
+.tab-btn {
+  flex: 1; background: none; border: none;
+  border-bottom: 2.5px solid transparent;
+  padding: 12px 4px; font-size: 13.5px; font-weight: 500;
+  color: var(--mute); cursor: pointer; font-family: inherit;
+  transition: color .2s, border-color .2s;
+}
+.tab-btn.active { color: var(--acc); border-bottom-color: var(--acc); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* SETTINGS BAR */
+.settings-bar {
+  background: var(--bg2); border-bottom: 1px solid var(--bd);
+  padding: 8px 16px; display: flex; gap: 16px; align-items: center;
+}
+.settings-bar label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--mute); cursor: pointer;
+}
+input[type=checkbox] { accent-color: var(--acc); }
+
+/* SECTION */
+.section { padding: 16px 14px 6px; }
+.sec-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--bd);
+}
+.sec-name { font-size: 15px; font-weight: 700; }
+.sec-ja { font-size: 12px; color: var(--mute); }
+.sec-badge {
+  margin-left: auto; background: var(--bg2); color: var(--mute);
+  border-radius: 10px; padding: 2px 9px; font-size: 11.5px;
+}
+
+/* CARD */
+.card {
+  background: var(--card); border: 1px solid var(--bd);
+  border-radius: var(--r); margin-bottom: 10px;
+  box-shadow: var(--sh); overflow: hidden; cursor: pointer;
+  transition: box-shadow .15s, transform .1s;
+}
+.card:active { transform: scale(.985); box-shadow: none; }
+.card-front { padding: 15px 16px; }
+.c-frame {
+  font-size: 17px; font-weight: 700; color: var(--acc);
+  line-height: 1.65; margin-bottom: 5px;
+  overflow-wrap: break-word;
+}
+.c-cn { font-size: 13px; color: var(--mute); line-height: 1.5; }
+.c-hint {
+  margin-top: 10px; font-size: 11px; color: var(--mute);
+  display: flex; align-items: center; gap: 4px;
+}
+.c-hint svg { opacity: .45; }
+.card.open .c-hint { display: none; }
+
+/* CARD BACK — grid-row animation */
+.card-back {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .28s ease;
+}
+.card.open .card-back { grid-template-rows: 1fr; }
+.card-back-inner { overflow: hidden; border-top: 1px solid var(--bd); }
+.card-back-content { padding: 14px 16px 15px; }
+.back-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  color: var(--mute); text-transform: uppercase; margin-bottom: 8px;
+}
+.c-ja {
+  font-size: 15.5px; font-weight: 500; line-height: 1.85;
+  color: var(--text); margin-bottom: 10px; overflow-wrap: break-word;
+  cursor: pointer; border-radius: 7px; transition: background .15s;
+}
+.c-ja:hover, .c-ja.speaking { background: var(--acc2); }
+.c-en {
+  font-size: 13px; color: var(--mute); line-height: 1.6; font-style: italic;
+  cursor: pointer; border-radius: 7px; transition: background .15s;
+}
+.c-en:hover, .c-en.speaking { background: var(--bg2); }
+.tts-hint { font-size: 10px; font-style: normal; opacity: .65; margin-left: 5px; }
+
+/* TAGS */
+.c-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+.tag { font-size: 11px; font-weight: 500; border-radius: 6px; padding: 2px 8px; }
+.tag-p { background: var(--amb2); color: var(--amb); }
+.tag-s { background: var(--grn2); color: var(--grn); }
+
+/* VOCAB */
+.vocab-blk {
+  margin-top: 13px; padding-top: 11px;
+  border-top: 1px dashed var(--bd);
+}
+.vocab-ttl {
+  font-size: 10px; font-weight: 700; letter-spacing: .8px;
+  color: var(--mute); margin-bottom: 7px;
+}
+.vocab-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.vchip {
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 8px; padding: 5px 10px;
+  cursor: pointer; transition: opacity .2s; user-select: none; line-height: 1.45;
+}
+.vchip .vj { font-size: 13px; font-weight: 600; display: block; color: var(--text); }
+.vchip .vk { font-size: 10px; color: var(--mute); }
+.vchip .vc { font-size: 11px; color: var(--acc); margin-left: 3px; }
+.vchip.mastered { opacity: .3; text-decoration: line-through; }
+.vchip.mastered-hidden { display: none; }
+
+/* ADD FORM */
+.add-form { padding: 20px 14px 50px; }
+.fs-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .8px;
+  color: var(--mute); text-transform: uppercase; margin: 22px 0 12px;
+}
+.fs-title:first-child { margin-top: 0; }
+.fg { margin-bottom: 14px; }
+.fg > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.fg .gh { font-size: 11px; color: var(--mute); margin-bottom: 5px; display: block; }
+.fi, .fta {
+  width: 100%; background: var(--card); border: 1.5px solid var(--bd);
+  border-radius: 9px; padding: 10px 12px;
+  font-size: 14px; font-family: inherit; color: var(--text);
+  outline: none; transition: border-color .2s; -webkit-appearance: none;
+}
+.fi:focus, .fta:focus { border-color: var(--acc); }
+.fta { min-height: 66px; resize: vertical; }
+.cbg { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 2px; }
+.cbl {
+  display: flex; align-items: center; gap: 5px; font-size: 13px;
+  cursor: pointer; background: var(--card); border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 7px 12px; transition: all .2s;
+}
+.cbl:has(input[type=checkbox]:checked) {
+  border-color: var(--acc); background: var(--acc2); color: var(--acc);
+}
+.submit-btn {
+  width: 100%; background: var(--acc); color: #fff; border: none;
+  border-radius: 11px; padding: 14px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; margin-top: 18px;
+  transition: opacity .2s, transform .1s;
+}
+.submit-btn:active { opacity: .8; transform: scale(.98); }
+.toast {
+  text-align: center; padding: 12px; color: var(--grn);
+  font-size: 14px; font-weight: 600; display: none;
+}
+.empty { text-align: center; padding: 48px 20px; color: var(--mute); font-size: 14px; }
+
+/* SETTINGS DRAWER */
+#s-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 300; backdrop-filter: blur(2px);
+}
+#s-drawer {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--card); border-radius: 20px 20px 0 0;
+  padding: 24px 18px 44px; z-index: 301;
+  box-shadow: 0 -6px 32px rgba(0,0,0,.18);
+}
+#s-overlay.open, #s-drawer.open { display: block; }
+.drawer-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.drawer-desc { font-size: 13px; color: var(--mute); line-height: 1.65; }
+.key-status { text-align:center; margin-top:10px; font-size:13px; color:var(--grn); display:none; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.btn-sec {
+  flex: 0 0 auto; background: var(--bg2); color: var(--mute);
+  border: 1px solid var(--bd); border-radius: 11px;
+  padding: 0 18px; font-size: 14px; cursor: pointer; font-family: inherit;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="h-title">口語語料庫</div>
+    <div class="h-sub">日本語 · 英語 &nbsp;|&nbsp; N3 句型 + 口癖</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button id="settingsBtn" style="background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:5px 12px;font-size:15px;cursor:pointer;line-height:1" title="语音设置">⚙️</button>
+    <button id="themeBtn">🌙</button>
+  </div>
+</header>
+
+<div class="tab-nav">
+  <button class="tab-btn active" data-tab="pattern">句型分类</button>
+  <button class="tab-btn" data-tab="scene">场景分类</button>
+  <button class="tab-btn" data-tab="add">＋ 添加</button>
+</div>
+
+<div class="settings-bar">
+  <label>
+    <input type="checkbox" id="hideMastered"> 隐藏已掌握单词
+  </label>
+</div>
+
+<div class="tab-content active" id="tab-pattern"></div>
+<div class="tab-content" id="tab-scene"></div>
+
+<div class="tab-content" id="tab-add">
+  <div class="add-form">
+    <div class="fs-title">卡片内容</div>
+
+    <div class="fg">
+      <label>句型框架 <span style="font-weight:400;color:var(--mute)">（日语提示）</span></label>
+      <span class="gh">例：___さえすれば、___</span>
+      <input class="fi" id="f-frame" type="text" placeholder="___さえすれば、___">
+    </div>
+    <div class="fg">
+      <label>中文提示</label>
+      <span class="gh">这张卡想让你回忆起什么？（一句话）</span>
+      <input class="fi" id="f-cn" type="text" placeholder="只要……就……">
+    </div>
+    <div class="fg">
+      <label>完整日语例句</label>
+      <textarea class="fta" id="f-ja" placeholder="ここに来さえすれば、ごちそうします。"></textarea>
+    </div>
+    <div class="fg">
+      <label>英文翻译</label>
+      <textarea class="fta" id="f-en" placeholder="I'll treat you to dinner as long as you come here."></textarea>
+    </div>
+    <div class="fg">
+      <label>重点单词 <span style="font-weight:400;color:var(--mute)">（可选）</span></label>
+      <span class="gh">格式：日语/假名/中文，多个用逗号隔开</span>
+      <textarea class="fta" id="f-vocab" placeholder="株/かぶ/股票, 上がる/あがる/上涨" style="min-height:52px"></textarea>
+    </div>
+
+    <div class="fs-title">分类归属</div>
+
+    <div class="fg">
+      <label>句型分类</label>
+      <span class="gh">输入新句型名，或从已有选项选择</span>
+      <input class="fi" id="f-pattern" type="text" list="pat-dl" placeholder="さえすれば">
+      <datalist id="pat-dl"></datalist>
+    </div>
+    <div class="fg">
+      <label>场景分类 <span style="font-weight:400;color:var(--mute)">（可多选）</span></label>
+      <div class="cbg" id="scene-cbs"></div>
+      <input class="fi" id="new-scene" type="text" placeholder="或输入新场景名…" style="margin-top:8px">
+    </div>
+
+    <button class="submit-btn" id="addBtn">保存卡片</button>
+    <div class="toast" id="toast">✓ 卡片已添加！</div>
+  </div>
+</div>
+
+<!-- Settings Drawer -->
+<div id="s-overlay"></div>
+<div id="s-drawer">
+  <div class="drawer-title">🔊 语音设置</div>
+  <div class="drawer-desc">
+    输入 OpenAI API Key，日语和英语将使用 AI 语音朗读（质量大幅提升）。<br>
+    Key 仅保存在本设备浏览器中，不会上传到任何服务器。
+  </div>
+  <div class="fg" style="margin-top:16px">
+    <label>OpenAI API Key</label>
+    <input class="fi" id="key-input" type="password" placeholder="sk-...">
+  </div>
+  <div id="key-status" class="key-status"></div>
+  <div class="btn-row">
+    <button class="submit-btn" id="saveKeyBtn" style="margin-top:0">保存</button>
+    <button class="btn-sec" id="clearKeyBtn">清除</button>
+  </div>
+</div>
+
+<script>
+// ── Built-in data ────────────────────────────────────────────────────────────
+const BUILT = [
+  { id:'b01', frame:'___さえすれば、___',
+    cn:'只要来这里，我就请客',
+    ja:'ここに来さえすれば、ごちそうします。',
+    en:"I'll treat you to dinner as long as you come here.",
+    vocab:[], pattern:'さえすれば', scenes:['日常対話'] },
+
+  { id:'b02', frame:'___が___上がりさえすれば、___',
+    cn:'股票涨10点就卖出',
+    ja:'この株が10ポイント上がりさえすれば、売ります。',
+    en:'I will sell this stock as long as it rises 10 points.',
+    vocab:[{j:'株',k:'かぶ',c:'股票'},{j:'上がる',k:'あがる',c:'上涨'},{j:'売る',k:'うる',c:'卖出'}],
+    pattern:'さえすれば', scenes:['股票'] },
+
+  { id:'b03', frame:'___が___下がりさえすれば、___',
+    cn:'股票跌10点就买入',
+    ja:'この株が10ポイント下がりさえすれば、買います。',
+    en:'I will buy this stock as long as it drops 10 points.',
+    vocab:[{j:'株',k:'かぶ',c:'股票'},{j:'下がる',k:'さがる',c:'下跌'},{j:'買う',k:'かう',c:'买入'}],
+    pattern:'さえすれば', scenes:['股票'] },
+
+  { id:'b04', frame:'___が外に出さえすれば、___',
+    cn:'他一出门就会被杀手杀掉',
+    ja:'彼が外に出さえすれば、暗殺者に殺されます。',
+    en:'He will be killed by an assassin as soon as he goes out.',
+    vocab:[{j:'暗殺者',k:'あんさつしゃ',c:'杀手'}],
+    pattern:'さえすれば', scenes:['日常対話'] },
+
+  { id:'b05', frame:'___でさえあれば大丈夫です',
+    cn:'只要安静、远离电梯就行',
+    ja:'静かでさえあり、エレベーターから離れていさえすれば大丈夫です。',
+    en:"It's fine as long as it's quiet and far from the elevator.",
+    vocab:[{j:'静か',k:'しずか',c:'安静'},{j:'離れる',k:'はなれる',c:'远离'}],
+    pattern:'さえすれば', scenes:['日常対話'] },
+
+  { id:'b06', frame:'___さえすれば儲かります',
+    cn:'只要卖出去就能赚钱',
+    ja:'売れさえすれば儲かります。',
+    en:'You can make money as long as it sells.',
+    vocab:[{j:'売れる',k:'うれる',c:'卖得出去'},{j:'儲かる',k:'もうかる',c:'赚钱'}],
+    pattern:'さえすれば', scenes:['股票'] },
+
+  { id:'b07', frame:'___に通りさえすれば___がもらえます',
+    cn:'答辩通过就能拿到学位证',
+    ja:'卒業審査に通りさえすれば学位記がもらえます。',
+    en:'You can get a degree certificate as long as you pass the defense.',
+    vocab:[{j:'卒業審査',k:'そつぎょうしんさ',c:'毕业答辩'},{j:'学位記',k:'がくいき',c:'学位证'}],
+    pattern:'さえすれば', scenes:['学习·就业'] },
+
+  { id:'b08', frame:'名詞＋さえあれば___',
+    cn:'只要有学位证就能找工作',
+    ja:'学位記さえあれば仕事を探すことができます。',
+    en:'You can look for a job as long as you have a degree certificate.',
+    vocab:[{j:'学位記',k:'がくいき',c:'学位证'}],
+    pattern:'さえすれば', scenes:['学习·就业'] },
+
+  { id:'b09', frame:'面接に通りさえすれば___',
+    cn:'面试通过就有工作了',
+    ja:'面接に通りさえすれば仕事がもらえます。',
+    en:'You can get the job as long as you pass the interview.',
+    vocab:[{j:'面接',k:'めんせつ',c:'面试'}],
+    pattern:'さえすれば', scenes:['学习·就业'] },
+
+  { id:'b10',
+    frame:'聴き取り ＞ 会話 ／ どもりやすい ／ ご容赦ください',
+    cn:'（自我介绍）听力比口语好，回答会磕巴，请见谅',
+    ja:'日本語は聴き取りの方が会話よりだいぶ上手です。なので普通に話して大丈夫、だいたい理解できます。ただ返答する時どもりやすいので、どうかご容赦ください。',
+    en:"My Japanese listening is much better than my speaking, so just talk normally—I can mostly understand you. But I may stutter a bit when replying, please bear with me.",
+    vocab:[
+      {j:'聴き取り',k:'ききとり',c:'听力'},
+      {j:'どもる',k:'どもる',c:'结巴、磕巴'},
+      {j:'ご容赦ください',k:'ごようしゃください',c:'请见谅'}
+    ],
+    pattern:'自我介绍', scenes:['自我介绍'] },
+
+  { id:'b11',
+    frame:'___は特別な例ではなく、むしろ___だと思います',
+    cn:'我们的情况不是个例，而是非常常见的',
+    ja:'私たちの状況は特別な例ではなく、むしろ非常によく見られるケースだと思います。',
+    en:"I don't think our situation is an isolated case; it's extremely common instead.",
+    vocab:[
+      {j:'特別な例',k:'とくべつなれい',c:'个例、特例'},
+      {j:'むしろ',k:'むしろ',c:'反而、而是'}
+    ],
+    pattern:'日常観点', scenes:['日常観点'] }
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let st = {};
+try { st = JSON.parse(localStorage.getItem('jpSt') || '{}'); } catch {}
+st.mastered  = st.mastered  || [];
+st.userCards = st.userCards || [];
+st.hide      = !!st.hide;
+st.theme     = st.theme     || 'light';
+st.openaiKey = st.openaiKey || '';
+
+function save() { localStorage.setItem('jpSt', JSON.stringify(st)); }
+function all()  { return [...BUILT, ...st.userCards]; }
+function vKey(cid, vj) { return cid + '|' + vj; }
+
+// ── Render helpers ────────────────────────────────────────────────────────────
+const JA = {
+  'さえすれば':'〜さえすれば',
+  '自我介绍':'自己紹介',
+  '日常観点':'日常的な意見表現',
+  '日常対話':'日常対話',
+  '股票':'株式・投資',
+  '学习·就业':'学習・就職',
+};
+
+function vocabHtml(card) {
+  if (!card.vocab?.length) return '';
+  const chips = card.vocab.map(v => {
+    const k = vKey(card.id, v.j);
+    const m = st.mastered.includes(k);
+    const cls = ['vchip', m && 'mastered', m && st.hide && 'mastered-hidden'].filter(Boolean).join(' ');
+    return `<div class="${cls}" data-cid="${card.id}" data-vj="${v.j}">
+      <span class="vj">${v.j}</span>
+      <span class="vk">${v.k} <span class="vc">${v.c}</span></span>
+    </div>`;
+  }).join('');
+  return `<div class="vocab-blk">
+    <div class="vocab-ttl">重点单词 — 点击标记已掌握</div>
+    <div class="vocab-chips">${chips}</div>
+  </div>`;
+}
+
+function cardHtml(c, showTags) {
+  const pt = showTags && c.pattern ? `<span class="tag tag-p">${c.pattern}</span>` : '';
+  const sc = showTags ? (c.scenes||[]).map(s => `<span class="tag tag-s">${s}</span>`).join('') : '';
+  const tags = (pt || sc) ? `<div class="c-tags">${pt}${sc}</div>` : '';
+  return `<div class="card" data-cid="${c.id}">
+    <div class="card-front">
+      <div class="c-frame">${c.frame}</div>
+      <div class="c-cn">${c.cn}</div>
+      <div class="c-hint">
+        <svg width="9" height="9" viewBox="0 0 9 9"><polygon points="1,0.5 8.5,4.5 1,8.5" fill="currentColor"/></svg>
+        点击展开例句
+      </div>
+    </div>
+    <div class="card-back">
+      <div class="card-back-inner">
+        <div class="card-back-content">
+          <div class="back-lbl">日语例句 <span class="tts-hint">🔊 点击朗读</span></div>
+          <div class="c-ja">${c.ja}</div>
+          <div class="c-en">${c.en}</div>
+          ${vocabHtml(c)}
+          ${tags}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sectionHtml(name, cards, showTags) {
+  return `<div class="section">
+    <div class="sec-head">
+      <span class="sec-name">${name}</span>
+      ${JA[name] ? `<span class="sec-ja">${JA[name]}</span>` : ''}
+      <span class="sec-badge">${cards.length} 张</span>
+    </div>
+    ${cards.map(c => cardHtml(c, showTags)).join('')}
+  </div>`;
+}
+
+function renderPattern() {
+  const byP = {};
+  all().forEach(c => { const p = c.pattern || '未分类'; (byP[p] = byP[p]||[]).push(c); });
+  document.getElementById('tab-pattern').innerHTML =
+    Object.entries(byP).map(([p,cs]) => sectionHtml(p, cs, false)).join('');
+}
+
+function renderScene() {
+  const byS = {};
+  all().forEach(c => {
+    (c.scenes?.length ? c.scenes : ['未分类']).forEach(s => { (byS[s]=byS[s]||[]).push(c); });
+  });
+  document.getElementById('tab-scene').innerHTML =
+    Object.keys(byS).length
+      ? Object.entries(byS).map(([s,cs]) => sectionHtml(s, cs, true)).join('')
+      : '<div class="empty">暂无内容</div>';
+}
+
+function refreshForm() {
+  const patterns = [...new Set(all().map(c => c.pattern).filter(Boolean))];
+  document.getElementById('pat-dl').innerHTML = patterns.map(p => `<option value="${p}">`).join('');
+
+  const scenes = [...new Set([
+    '自我介绍','日常観点','日常対話','学习·就业','股票',
+    ...all().flatMap(c => c.scenes||[])
+  ])];
+  document.getElementById('scene-cbs').innerHTML = scenes.map(s =>
+    `<label class="cbl"><input type="checkbox" name="scene" value="${s}"> ${s}</label>`
+  ).join('');
+}
+
+function renderAll() { renderPattern(); renderScene(); refreshForm(); }
+
+// ── Events ────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+document.body.addEventListener('click', e => {
+  const ja = e.target.closest('.c-ja');
+  if (ja) { e.stopPropagation(); speak(ja.textContent, 'ja-JP', ja); return; }
+  const en = e.target.closest('.c-en');
+  if (en) { e.stopPropagation(); speak(en.textContent, 'en-US', en); return; }
+  const chip = e.target.closest('.vchip');
+  if (chip) {
+    const k = vKey(chip.dataset.cid, chip.dataset.vj);
+    const i = st.mastered.indexOf(k);
+    i === -1 ? st.mastered.push(k) : st.mastered.splice(i, 1);
+    save();
+    chip.classList.toggle('mastered');
+    if (st.hide) chip.classList.toggle('mastered-hidden', chip.classList.contains('mastered'));
+    return;
+  }
+  const card = e.target.closest('.card');
+  if (card) { card.classList.toggle('open'); }
+});
+
+const hmCb = document.getElementById('hideMastered');
+hmCb.checked = st.hide;
+hmCb.addEventListener('change', e => { st.hide = e.target.checked; save(); renderAll(); });
+
+document.documentElement.dataset.theme = st.theme;
+document.getElementById('themeBtn').textContent = st.theme === 'dark' ? '☀️' : '🌙';
+document.getElementById('themeBtn').addEventListener('click', () => {
+  st.theme = st.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = st.theme;
+  document.getElementById('themeBtn').textContent = st.theme === 'dark' ? '☀️' : '🌙';
+  save();
+});
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const frame   = document.getElementById('f-frame').value.trim();
+  const cn      = document.getElementById('f-cn').value.trim();
+  const ja      = document.getElementById('f-ja').value.trim();
+  const en      = document.getElementById('f-en').value.trim();
+  const vocabRaw= document.getElementById('f-vocab').value.trim();
+  const pattern = document.getElementById('f-pattern').value.trim();
+  const newSc   = document.getElementById('new-scene').value.trim();
+
+  if (!frame || !ja) { alert('请至少填写句型框架和日语例句'); return; }
+
+  const vocab = vocabRaw ? vocabRaw.split(',').map(s => {
+    const [j='',k='',c=''] = s.trim().split('/');
+    return { j: j.trim(), k: k.trim(), c: c.trim() };
+  }).filter(v => v.j) : [];
+
+  const scenes = [
+    ...[...document.querySelectorAll('input[name="scene"]:checked')].map(cb => cb.value),
+    ...(newSc ? [newSc] : [])
+  ];
+
+  st.userCards.push({ id:'u'+Date.now(), frame, cn, ja, en, vocab, pattern, scenes });
+  save();
+
+  ['f-frame','f-cn','f-ja','f-en','f-vocab','f-pattern','new-scene'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('input[name="scene"]').forEach(cb => cb.checked = false);
+
+  const toast = document.getElementById('toast');
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 2000);
+
+  renderAll();
+});
+
+// ── TTS ──────────────────────────────────────────────────────────────────────
+let _audio = null;
+
+async function speak(text, lang, el) {
+  if (_audio) { _audio.pause(); _audio = null; }
+  window.speechSynthesis?.cancel();
+  if (st.openaiKey) {
+    await speakOpenAI(text, lang, el);
+  } else {
+    speakBrowser(text, lang, el);
+  }
+}
+
+async function speakOpenAI(text, lang, el) {
+  if (el) el.classList.add('speaking');
+  try {
+    const voice = lang.startsWith('ja') ? 'nova' : 'alloy';
+    const res = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + st.openaiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'tts-1', input: text, voice })
+    });
+    if (!res.ok) throw new Error(res.status);
+    const url = URL.createObjectURL(await res.blob());
+    _audio = new Audio(url);
+    _audio.onended = _audio.onerror = () => {
+      if (el) el.classList.remove('speaking');
+      URL.revokeObjectURL(url); _audio = null;
+    };
+    _audio.play();
+  } catch(err) {
+    console.error('OpenAI TTS:', err);
+    if (el) el.classList.remove('speaking');
+    speakBrowser(text, lang, el);
+  }
+}
+
+function speakBrowser(text, lang, el) {
+  if (!window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang; u.rate = 0.85;
+  if (el) { el.classList.add('speaking'); u.onend = u.onerror = () => el.classList.remove('speaking'); }
+  window.speechSynthesis.speak(u);
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('s-overlay').classList.add('open');
+  document.getElementById('s-drawer').classList.add('open');
+  document.getElementById('key-input').value = st.openaiKey;
+  document.getElementById('key-status').style.display = 'none';
+}
+function closeSettings() {
+  document.getElementById('s-overlay').classList.remove('open');
+  document.getElementById('s-drawer').classList.remove('open');
+}
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('s-overlay').addEventListener('click', closeSettings);
+document.getElementById('saveKeyBtn').addEventListener('click', () => {
+  st.openaiKey = document.getElementById('key-input').value.trim();
+  save();
+  const ks = document.getElementById('key-status');
+  ks.textContent = st.openaiKey ? '✓ 已保存，下次点击将使用 AI 语音' : '已清除';
+  ks.style.display = 'block';
+  setTimeout(closeSettings, 1400);
+});
+document.getElementById('clearKeyBtn').addEventListener('click', () => {
+  st.openaiKey = ''; document.getElementById('key-input').value = ''; save();
+  document.getElementById('key-status').textContent = '已清除';
+  document.getElementById('key-status').style.display = 'block';
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>
