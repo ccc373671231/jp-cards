@@ -364,6 +364,10 @@ input[type=checkbox] { accent-color: var(--acc); }
     <button class="submit-btn" id="saveKeyBtn" style="margin-top:0">保存</button>
     <button class="btn-sec" id="clearKeyBtn">清除</button>
   </div>
+  <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
+    <button class="btn-sec" id="listVoicesBtn" style="font-size:12px">查看本机可用语音列表</button>
+    <div id="voice-list" style="margin-top:8px;font-size:11px;color:var(--mute);max-height:160px;overflow-y:auto;display:none;white-space:pre-wrap;line-height:1.8"></div>
+  </div>
 </div>
 
 <!-- Edit Drawer -->
@@ -938,6 +942,13 @@ document.getElementById('clearKeyBtn').addEventListener('click', () => {
   st.openaiKey = ''; document.getElementById('key-input').value = ''; save();
   document.getElementById('key-status').textContent = '已清除';
   document.getElementById('key-status').style.display = 'block';
+});
+document.getElementById('listVoicesBtn').addEventListener('click', () => {
+  const box = document.getElementById('voice-list');
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) { box.textContent = '暂无语音（请稍后再试）'; box.style.display = 'block'; return; }
+  box.textContent = voices.map(v => `${v.lang}  ${v.name}`).join('\n');
+  box.style.display = 'block';
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
