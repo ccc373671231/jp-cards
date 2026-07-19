@@ -18,6 +18,8 @@
   --grn2: #e6f4ec;
   --amb:  #b5722a;
   --amb2: #fdf0e0;
+  --red:  #c0392b;
+  --red2: #fdecea;
   --sh:   0 1px 4px rgba(0,0,0,.06), 0 3px 10px rgba(0,0,0,.05);
   --r:    13px;
 }
@@ -34,14 +36,23 @@
   --grn2: #192e24;
   --amb:  #d4953e;
   --amb2: #2e2014;
+  --red:  #e05c5c;
+  --red2: #2e1a1a;
   --sh:   0 1px 4px rgba(0,0,0,.3), 0 3px 10px rgba(0,0,0,.25);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: 'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP', -apple-system, sans-serif;
+  font-family: 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei',
+               'Hiragino Sans GB', 'Yu Gothic', 'Noto Sans JP', sans-serif;
   background: var(--bg); color: var(--text);
   min-height: 100vh; font-size: 15px; line-height: 1.55;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Japanese content: JP font first */
+.c-frame, .c-ja, .vj, .vk {
+  font-family: 'Yu Gothic UI', 'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP',
+               'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* HEADER */
@@ -112,8 +123,7 @@ input[type=checkbox] { accent-color: var(--acc); }
 .card-front { padding: 15px 16px; }
 .c-frame {
   font-size: 17px; font-weight: 700; color: var(--acc);
-  line-height: 1.65; margin-bottom: 5px;
-  overflow-wrap: break-word;
+  line-height: 1.65; margin-bottom: 5px; overflow-wrap: break-word;
 }
 .c-cn { font-size: 13px; color: var(--mute); line-height: 1.5; }
 .c-hint {
@@ -123,7 +133,7 @@ input[type=checkbox] { accent-color: var(--acc); }
 .c-hint svg { opacity: .45; }
 .card.open .c-hint { display: none; }
 
-/* CARD BACK — grid-row animation */
+/* CARD BACK */
 .card-back {
   display: grid; grid-template-rows: 0fr;
   transition: grid-template-rows .28s ease;
@@ -165,15 +175,43 @@ input[type=checkbox] { accent-color: var(--acc); }
 }
 .vocab-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .vchip {
-  background: var(--bg2); border: 1px solid var(--bd);
-  border-radius: 8px; padding: 5px 10px;
-  cursor: pointer; transition: opacity .2s; user-select: none; line-height: 1.45;
+  background: var(--bg2); border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 5px 6px 5px 10px;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: border-color .2s, background .2s; user-select: none; line-height: 1.45;
 }
-.vchip .vj { font-size: 13px; font-weight: 600; display: block; color: var(--text); }
-.vchip .vk { font-size: 10px; color: var(--mute); }
-.vchip .vc { font-size: 11px; color: var(--acc); margin-left: 3px; }
-.vchip.mastered { opacity: .3; text-decoration: line-through; }
+.vchip:active { opacity: .75; }
+.vchip.mastered { border-color: var(--grn); background: var(--grn2); }
+.vchip.mastered .vj { color: var(--grn); }
 .vchip.mastered-hidden { display: none; }
+.vchip.speaking { background: var(--acc2); border-color: var(--acc); }
+.vchip-body { flex: 1; }
+.vj { font-size: 13px; font-weight: 600; display: block; color: var(--text); }
+.vk { font-size: 10px; color: var(--mute); display: block; }
+.vc { font-size: 11px; color: var(--acc); margin-left: 3px; }
+.vchip-star {
+  flex: 0 0 auto; background: none; border: 1.5px solid var(--bd);
+  border-radius: 50%; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--mute); cursor: pointer;
+  transition: all .15s; padding: 0; font-family: inherit; line-height: 1;
+}
+.vchip-star.on { background: var(--grn); border-color: var(--grn); color: #fff; }
+
+/* CARD ACTIONS */
+.card-actions {
+  display: flex; gap: 8px;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--bd);
+}
+.ca-btn {
+  flex: 1; background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 8px; padding: 8px; font-size: 13px;
+  color: var(--mute); cursor: pointer; font-family: inherit;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.ca-btn:hover { background: var(--bd); }
+.ca-del:hover { background: var(--red2); border-color: var(--red); color: var(--red); }
 
 /* ADD FORM */
 .add-form { padding: 20px 14px 50px; }
@@ -215,18 +253,19 @@ input[type=checkbox] { accent-color: var(--acc); }
 }
 .empty { text-align: center; padding: 48px 20px; color: var(--mute); font-size: 14px; }
 
-/* SETTINGS DRAWER */
-#s-overlay {
+/* DRAWERS */
+.d-overlay {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,.45); z-index: 300; backdrop-filter: blur(2px);
 }
-#s-drawer {
+.d-panel {
   display: none; position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--card); border-radius: 20px 20px 0 0;
   padding: 24px 18px 44px; z-index: 301;
   box-shadow: 0 -6px 32px rgba(0,0,0,.18);
+  max-height: 90vh; overflow-y: auto;
 }
-#s-overlay.open, #s-drawer.open { display: block; }
+.d-overlay.open, .d-panel.open { display: block; }
 .drawer-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .drawer-desc { font-size: 13px; color: var(--mute); line-height: 1.65; }
 .key-status { text-align:center; margin-top:10px; font-size:13px; color:var(--grn); display:none; }
@@ -243,7 +282,7 @@ input[type=checkbox] { accent-color: var(--acc); }
 <header>
   <div>
     <div class="h-title">口語語料庫</div>
-    <div class="h-sub">日本語 · 英語 &nbsp;|&nbsp; N3 句型 + 口癖</div>
+    <div class="h-sub">打造专属的个性化语料库</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
     <button id="settingsBtn" style="background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:5px 12px;font-size:15px;cursor:pointer;line-height:1" title="语音设置">⚙️</button>
@@ -258,9 +297,7 @@ input[type=checkbox] { accent-color: var(--acc); }
 </div>
 
 <div class="settings-bar">
-  <label>
-    <input type="checkbox" id="hideMastered"> 隐藏已掌握单词
-  </label>
+  <label><input type="checkbox" id="hideMastered"> 隐藏已掌握单词</label>
 </div>
 
 <div class="tab-content active" id="tab-pattern"></div>
@@ -269,7 +306,6 @@ input[type=checkbox] { accent-color: var(--acc); }
 <div class="tab-content" id="tab-add">
   <div class="add-form">
     <div class="fs-title">卡片内容</div>
-
     <div class="fg">
       <label>句型框架 <span style="font-weight:400;color:var(--mute)">（日语提示）</span></label>
       <span class="gh">例：___さえすれば、___</span>
@@ -293,9 +329,7 @@ input[type=checkbox] { accent-color: var(--acc); }
       <span class="gh">格式：日语/假名/中文，多个用逗号隔开</span>
       <textarea class="fta" id="f-vocab" placeholder="株/かぶ/股票, 上がる/あがる/上涨" style="min-height:52px"></textarea>
     </div>
-
     <div class="fs-title">分类归属</div>
-
     <div class="fg">
       <label>句型分类</label>
       <span class="gh">输入新句型名，或从已有选项选择</span>
@@ -307,15 +341,14 @@ input[type=checkbox] { accent-color: var(--acc); }
       <div class="cbg" id="scene-cbs"></div>
       <input class="fi" id="new-scene" type="text" placeholder="或输入新场景名…" style="margin-top:8px">
     </div>
-
     <button class="submit-btn" id="addBtn">保存卡片</button>
     <div class="toast" id="toast">✓ 卡片已添加！</div>
   </div>
 </div>
 
 <!-- Settings Drawer -->
-<div id="s-overlay"></div>
-<div id="s-drawer">
+<div class="d-overlay" id="s-overlay"></div>
+<div class="d-panel" id="s-drawer">
   <div class="drawer-title">🔊 语音设置</div>
   <div class="drawer-desc">
     输入 OpenAI API Key，日语和英语将使用 AI 语音朗读（质量大幅提升）。<br>
@@ -329,6 +362,51 @@ input[type=checkbox] { accent-color: var(--acc); }
   <div class="btn-row">
     <button class="submit-btn" id="saveKeyBtn" style="margin-top:0">保存</button>
     <button class="btn-sec" id="clearKeyBtn">清除</button>
+  </div>
+</div>
+
+<!-- Edit Drawer -->
+<div class="d-overlay" id="e-overlay"></div>
+<div class="d-panel" id="e-drawer">
+  <div class="drawer-title">✏ 编辑卡片</div>
+  <div style="padding-top:16px">
+    <div class="fs-title">卡片内容</div>
+    <div class="fg">
+      <label>句型框架</label>
+      <input class="fi" id="ef-frame" type="text">
+    </div>
+    <div class="fg">
+      <label>中文提示</label>
+      <input class="fi" id="ef-cn" type="text">
+    </div>
+    <div class="fg">
+      <label>完整日语例句</label>
+      <textarea class="fta" id="ef-ja"></textarea>
+    </div>
+    <div class="fg">
+      <label>英文翻译</label>
+      <textarea class="fta" id="ef-en"></textarea>
+    </div>
+    <div class="fg">
+      <label>重点单词</label>
+      <span class="gh">格式：日语/假名/中文，多个用逗号隔开</span>
+      <textarea class="fta" id="ef-vocab" style="min-height:52px"></textarea>
+    </div>
+    <div class="fs-title">分类归属</div>
+    <div class="fg">
+      <label>句型分类</label>
+      <input class="fi" id="ef-pattern" type="text" list="epat-dl">
+      <datalist id="epat-dl"></datalist>
+    </div>
+    <div class="fg">
+      <label>场景分类（多选）</label>
+      <div class="cbg" id="escene-cbs"></div>
+      <input class="fi" id="enew-scene" type="text" placeholder="或输入新场景名…" style="margin-top:8px">
+    </div>
+    <div class="btn-row" style="margin-top:18px">
+      <button class="submit-btn" id="saveEditBtn" style="margin-top:0">保存修改</button>
+      <button class="btn-sec" id="cancelEditBtn">取消</button>
+    </div>
   </div>
 </div>
 
@@ -426,12 +504,13 @@ let st = {};
 try { st = JSON.parse(localStorage.getItem('jpSt') || '{}'); } catch {}
 st.mastered  = st.mastered  || [];
 st.userCards = st.userCards || [];
+st.deleted   = st.deleted   || [];
 st.hide      = !!st.hide;
 st.theme     = st.theme     || 'light';
 st.openaiKey = st.openaiKey || '';
 
 function save() { localStorage.setItem('jpSt', JSON.stringify(st)); }
-function all()  { return [...BUILT, ...st.userCards]; }
+function all()  { return [...BUILT, ...st.userCards].filter(c => !st.deleted.includes(c.id)); }
 function vKey(cid, vj) { return cid + '|' + vj; }
 
 // ── Render helpers ────────────────────────────────────────────────────────────
@@ -450,13 +529,16 @@ function vocabHtml(card) {
     const k = vKey(card.id, v.j);
     const m = st.mastered.includes(k);
     const cls = ['vchip', m && 'mastered', m && st.hide && 'mastered-hidden'].filter(Boolean).join(' ');
-    return `<div class="${cls}" data-cid="${card.id}" data-vj="${v.j}">
-      <span class="vj">${v.j}</span>
-      <span class="vk">${v.k} <span class="vc">${v.c}</span></span>
+    return `<div class="${cls}" data-cid="${card.id}" data-vj="${v.j}" title="点击朗读">
+      <div class="vchip-body">
+        <span class="vj">${v.j}</span>
+        <span class="vk">${v.k} <span class="vc">${v.c}</span></span>
+      </div>
+      <button class="vchip-star${m?' on':''}" data-action="master" data-cid="${card.id}" data-vj="${v.j}" title="标记已掌握">✓</button>
     </div>`;
   }).join('');
   return `<div class="vocab-blk">
-    <div class="vocab-ttl">重点单词 — 点击标记已掌握</div>
+    <div class="vocab-ttl">重点单词 — 点击朗读 &nbsp;·&nbsp; ✓ 标记已掌握</div>
     <div class="vocab-chips">${chips}</div>
   </div>`;
 }
@@ -482,6 +564,10 @@ function cardHtml(c, showTags) {
           <div class="c-en">${c.en}</div>
           ${vocabHtml(c)}
           ${tags}
+          <div class="card-actions">
+            <button class="ca-btn" data-action="edit" data-cid="${c.id}">✏ 编辑</button>
+            <button class="ca-btn ca-del" data-action="delete" data-cid="${c.id}">删除</button>
+          </div>
         </div>
       </div>
     </div>
@@ -520,7 +606,6 @@ function renderScene() {
 function refreshForm() {
   const patterns = [...new Set(all().map(c => c.pattern).filter(Boolean))];
   document.getElementById('pat-dl').innerHTML = patterns.map(p => `<option value="${p}">`).join('');
-
   const scenes = [...new Set([
     '自我介绍','日常観点','日常対話','学习·就业','股票',
     ...all().flatMap(c => c.scenes||[])
@@ -543,22 +628,47 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 document.body.addEventListener('click', e => {
+  // TTS: full sentences
   const ja = e.target.closest('.c-ja');
   if (ja) { e.stopPropagation(); speak(ja.textContent, 'ja-JP', ja); return; }
   const en = e.target.closest('.c-en');
   if (en) { e.stopPropagation(); speak(en.textContent, 'en-US', en); return; }
-  const chip = e.target.closest('.vchip');
-  if (chip) {
-    const k = vKey(chip.dataset.cid, chip.dataset.vj);
+
+  // Mastered toggle (✓ button)
+  const star = e.target.closest('.vchip-star');
+  if (star) {
+    e.stopPropagation();
+    const k = vKey(star.dataset.cid, star.dataset.vj);
     const i = st.mastered.indexOf(k);
     i === -1 ? st.mastered.push(k) : st.mastered.splice(i, 1);
     save();
-    chip.classList.toggle('mastered');
-    if (st.hide) chip.classList.toggle('mastered-hidden', chip.classList.contains('mastered'));
+    const chip = star.closest('.vchip');
+    const nowMastered = i === -1;
+    chip.classList.toggle('mastered', nowMastered);
+    star.classList.toggle('on', nowMastered);
+    if (st.hide) chip.classList.toggle('mastered-hidden', nowMastered);
     return;
   }
+
+  // TTS: vocab word (click chip body)
+  const chip = e.target.closest('.vchip');
+  if (chip) { e.stopPropagation(); speak(chip.dataset.vj, 'ja-JP', chip); return; }
+
+  // Edit card
+  const editBtn = e.target.closest('[data-action="edit"]');
+  if (editBtn) { e.stopPropagation(); openEditDrawer(editBtn.dataset.cid); return; }
+
+  // Delete card
+  const delBtn = e.target.closest('[data-action="delete"]');
+  if (delBtn) {
+    e.stopPropagation();
+    if (confirm('确定删除这张卡片？')) deleteCard(delBtn.dataset.cid);
+    return;
+  }
+
+  // Toggle card
   const card = e.target.closest('.card');
-  if (card) { card.classList.toggle('open'); }
+  if (card) card.classList.toggle('open');
 });
 
 const hmCb = document.getElementById('hideMastered');
@@ -575,13 +685,13 @@ document.getElementById('themeBtn').addEventListener('click', () => {
 });
 
 document.getElementById('addBtn').addEventListener('click', () => {
-  const frame   = document.getElementById('f-frame').value.trim();
-  const cn      = document.getElementById('f-cn').value.trim();
-  const ja      = document.getElementById('f-ja').value.trim();
-  const en      = document.getElementById('f-en').value.trim();
-  const vocabRaw= document.getElementById('f-vocab').value.trim();
-  const pattern = document.getElementById('f-pattern').value.trim();
-  const newSc   = document.getElementById('new-scene').value.trim();
+  const frame    = document.getElementById('f-frame').value.trim();
+  const cn       = document.getElementById('f-cn').value.trim();
+  const ja       = document.getElementById('f-ja').value.trim();
+  const en       = document.getElementById('f-en').value.trim();
+  const vocabRaw = document.getElementById('f-vocab').value.trim();
+  const pattern  = document.getElementById('f-pattern').value.trim();
+  const newSc    = document.getElementById('new-scene').value.trim();
 
   if (!frame || !ja) { alert('请至少填写句型框架和日语例句'); return; }
 
@@ -597,16 +707,101 @@ document.getElementById('addBtn').addEventListener('click', () => {
 
   st.userCards.push({ id:'u'+Date.now(), frame, cn, ja, en, vocab, pattern, scenes });
   save();
-
   ['f-frame','f-cn','f-ja','f-en','f-vocab','f-pattern','new-scene'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.querySelectorAll('input[name="scene"]').forEach(cb => cb.checked = false);
-
   const toast = document.getElementById('toast');
   toast.style.display = 'block';
   setTimeout(() => { toast.style.display = 'none'; }, 2000);
+  renderAll();
+});
 
+// ── Delete ────────────────────────────────────────────────────────────────────
+function deleteCard(cid) {
+  const userIdx = st.userCards.findIndex(c => c.id === cid);
+  if (userIdx !== -1) {
+    st.userCards.splice(userIdx, 1);
+  } else {
+    if (!st.deleted.includes(cid)) st.deleted.push(cid);
+  }
+  save();
+  renderAll();
+}
+
+// ── Edit drawer ───────────────────────────────────────────────────────────────
+let _editCid = null;
+
+function openEditDrawer(cid) {
+  const card = all().find(c => c.id === cid);
+  if (!card) return;
+  _editCid = cid;
+
+  document.getElementById('ef-frame').value   = card.frame   || '';
+  document.getElementById('ef-cn').value      = card.cn      || '';
+  document.getElementById('ef-ja').value      = card.ja      || '';
+  document.getElementById('ef-en').value      = card.en      || '';
+  document.getElementById('ef-vocab').value   = (card.vocab||[]).map(v=>`${v.j}/${v.k}/${v.c}`).join(', ');
+  document.getElementById('ef-pattern').value = card.pattern || '';
+
+  const patterns = [...new Set(all().map(c => c.pattern).filter(Boolean))];
+  document.getElementById('epat-dl').innerHTML = patterns.map(p => `<option value="${p}">`).join('');
+
+  const scenes = [...new Set([
+    '自我介绍','日常観点','日常対話','学习·就业','股票',
+    ...all().flatMap(c => c.scenes||[])
+  ])];
+  document.getElementById('escene-cbs').innerHTML = scenes.map(s =>
+    `<label class="cbl"><input type="checkbox" name="escene" value="${s}"${(card.scenes||[]).includes(s)?' checked':''}> ${s}</label>`
+  ).join('');
+  document.getElementById('enew-scene').value = '';
+
+  document.getElementById('e-overlay').classList.add('open');
+  document.getElementById('e-drawer').classList.add('open');
+}
+
+function closeEditDrawer() {
+  document.getElementById('e-overlay').classList.remove('open');
+  document.getElementById('e-drawer').classList.remove('open');
+  _editCid = null;
+}
+
+document.getElementById('e-overlay').addEventListener('click', closeEditDrawer);
+document.getElementById('cancelEditBtn').addEventListener('click', closeEditDrawer);
+
+document.getElementById('saveEditBtn').addEventListener('click', () => {
+  if (!_editCid) return;
+  const frame    = document.getElementById('ef-frame').value.trim();
+  const cn       = document.getElementById('ef-cn').value.trim();
+  const ja       = document.getElementById('ef-ja').value.trim();
+  const en       = document.getElementById('ef-en').value.trim();
+  const vocabRaw = document.getElementById('ef-vocab').value.trim();
+  const pattern  = document.getElementById('ef-pattern').value.trim();
+  const newSc    = document.getElementById('enew-scene').value.trim();
+
+  if (!frame || !ja) { alert('请至少填写句型框架和日语例句'); return; }
+
+  const vocab = vocabRaw ? vocabRaw.split(',').map(s => {
+    const [j='',k='',c=''] = s.trim().split('/');
+    return { j: j.trim(), k: k.trim(), c: c.trim() };
+  }).filter(v => v.j) : [];
+
+  const scenes = [
+    ...[...document.querySelectorAll('input[name="escene"]:checked')].map(cb => cb.value),
+    ...(newSc ? [newSc] : [])
+  ];
+
+  const userIdx = st.userCards.findIndex(c => c.id === _editCid);
+  if (userIdx !== -1) {
+    st.userCards[userIdx] = { id: _editCid, frame, cn, ja, en, vocab, pattern, scenes };
+  } else {
+    // Built-in card: hide original, store edited copy as user card
+    if (!st.deleted.includes(_editCid)) st.deleted.push(_editCid);
+    st.userCards.push({ id:'u'+Date.now(), frame, cn, ja, en, vocab, pattern, scenes });
+  }
+
+  save();
+  closeEditDrawer();
   renderAll();
 });
 
@@ -652,7 +847,23 @@ function speakBrowser(text, lang, el) {
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang; u.rate = 0.85;
   if (el) { el.classList.add('speaking'); u.onend = u.onerror = () => el.classList.remove('speaking'); }
-  window.speechSynthesis.speak(u);
+
+  let fired = false;
+  function go() {
+    if (fired) return; fired = true;
+    const voices = window.speechSynthesis.getVoices();
+    const prefix = lang.split('-')[0];
+    const voice = voices.find(v => v.lang.startsWith(prefix));
+    if (voice) u.voice = voice;
+    window.speechSynthesis.speak(u);
+  }
+
+  if (window.speechSynthesis.getVoices().length > 0) {
+    go();
+  } else {
+    window.speechSynthesis.onvoiceschanged = go;
+    setTimeout(go, 500); // Android fallback: fire anyway if event never comes
+  }
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
