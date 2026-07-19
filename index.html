@@ -867,14 +867,20 @@ function getBrowserVoice(lang) {
   const pool = voices.filter(v => v.lang.startsWith(prefix));
   if (!pool.length) return null;
   if (prefix === 'ja') {
-    return pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name) && /Online|Natural/i.test(v.name))
-      || pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name))
+    return pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name) && /Online|Natural/i.test(v.name)) // Windows 在线女声
+      || pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name))                                      // Windows 离线女声
+      || pool.find(v => /O-ren/i.test(v.name))                                                    // iOS 增强女声
+      || pool.find(v => /Kyoko/i.test(v.name))                                                    // iOS 标准女声
+      || pool.find(v => /Google/i.test(v.name))                                                   // Android Google 语音
       || pool.find(v => /Online|Natural/i.test(v.name))
       || pool[0];
   }
   if (prefix === 'en') {
-    return pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name) && /Online|Natural/i.test(v.name))
-      || pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name))
+    return pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name) && /Online|Natural/i.test(v.name)) // Windows 在线女声
+      || pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name))                                     // Windows 离线女声
+      || pool.find(v => /Samantha|Nicky/i.test(v.name))                                              // iOS 女声
+      || pool.find(v => /Google.*Female|Female.*Google/i.test(v.name))                               // Android 女声
+      || pool.find(v => /Google/i.test(v.name) && /en-US|en-GB/i.test(v.lang))                      // Android 英语
       || pool.find(v => /Online|Natural/i.test(v.name))
       || pool[0];
   }
