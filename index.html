@@ -278,6 +278,7 @@ body.show-furigana .c-furigana { display: block; }
   max-height: 90vh; overflow-y: auto;
 }
 .d-overlay.open, .d-panel.open { display: block; }
+#r-overlay { backdrop-filter: none; }
 .drawer-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .drawer-desc { font-size: 13px; color: var(--mute); line-height: 1.65; }
 .key-status { text-align:center; margin-top:10px; font-size:13px; color:var(--grn); display:none; }
@@ -331,6 +332,13 @@ body.batch-mode { padding-bottom: 88px; }
 }
 
 /* RECORDING DRAWER */
+.rec-preview {
+  margin-top: 14px; background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 12px; padding: 12px 12px 10px;
+}
+.rec-preview .back-lbl { margin-bottom: 6px; }
+.rec-preview .c-ja, .rec-preview .c-en { margin-bottom: 6px; }
+.rec-preview .c-en { margin-bottom: 0; }
 .rec-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
 .rec-item {
   display: flex; align-items: center; gap: 10px;
@@ -485,6 +493,13 @@ body.batch-mode { padding-bottom: 88px; }
     <div id="voice-list" style="margin-top:8px;font-size:11px;color:var(--mute);max-height:160px;overflow-y:auto;display:none;white-space:pre-wrap;line-height:1.8"></div>
   </div>
   <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:14px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">🈶 显示设置</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer">
+      <input type="checkbox" id="showFuriganaDrawer"> 显示整句假名注音
+    </label>
+    <div style="font-size:11px;color:var(--mute);margin-top:6px;line-height:1.6">打开后，卡片里的整句平假名会显示在日语例句下方。</div>
+  </div>
+  <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:14px">
     <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">📦 数据备份</div>
     <div style="font-size:12px;color:var(--mute);margin-bottom:10px;line-height:1.6">导出：把你添加的卡片和掌握记录保存成 JSON 文件。<br>导入：从备份文件还原，已存在的卡片自动跳过。</div>
     <div class="btn-row">
@@ -559,6 +574,12 @@ body.batch-mode { padding-bottom: 88px; }
   <div class="drawer-title">🎙 我的录音</div>
   <div class="drawer-desc" id="r-card-label" style="font-size:13px;margin-bottom:4px"></div>
   <div style="font-size:11px;color:var(--mute)">最多保存 4 条，新录音自动替换最旧的一条。</div>
+  <div class="rec-preview" id="rec-preview" style="display:none">
+    <div class="back-lbl">跟读例句</div>
+    <div class="c-ja" id="r-ja" lang="ja"></div>
+    <div class="c-furigana" id="r-furigana" lang="ja"></div>
+    <div class="c-en" id="r-en"></div>
+  </div>
   <div class="rec-list" id="rec-list"></div>
   <button id="recBtn">🎙 开始录音</button>
 </div>
@@ -873,12 +894,25 @@ hmCb.checked = st.hide;
 hmCb.addEventListener('change', e => { st.hide = e.target.checked; save(); renderAll(); });
 
 const sfCb = document.getElementById('showFurigana');
-sfCb.checked = st.showFurigana;
-sfCb.addEventListener('change', e => {
-  st.showFurigana = e.target.checked;
+const sfDrawerCb = document.getElementById('showFuriganaDrawer');
+
+function syncFuriganaToggle(next) {
+  st.showFurigana = !!next;
   document.body.classList.toggle('show-furigana', st.showFurigana);
+  sfCb.checked = st.showFurigana;
+  if (sfDrawerCb) sfDrawerCb.checked = st.showFurigana;
+  const recFurigana = document.getElementById('r-furigana');
+  if (recFurigana) {
+    const hasText = !!recFurigana.textContent.trim();
+    recFurigana.style.display = hasText && st.showFurigana ? 'block' : 'none';
+  }
   save();
-});
+}
+
+sfCb.checked = st.showFurigana;
+if (sfDrawerCb) sfDrawerCb.checked = st.showFurigana;
+sfCb.addEventListener('change', e => syncFuriganaToggle(e.target.checked));
+if (sfDrawerCb) sfDrawerCb.addEventListener('change', e => syncFuriganaToggle(e.target.checked));
 if (st.showFurigana) document.body.classList.add('show-furigana');
 
 document.documentElement.dataset.theme = st.theme;
@@ -1179,6 +1213,7 @@ function openSettings() {
   document.getElementById('s-drawer').classList.add('open');
   document.getElementById('key-input').value = st.openaiKey;
   document.getElementById('key-status').style.display = 'none';
+  if (sfDrawerCb) sfDrawerCb.checked = st.showFurigana;
   const hint = document.getElementById('key-active-hint');
   if (hint) hint.innerHTML = st.openaiKey
     ? '<span style="color:#27ae60">✓ 当前已启用 AI 语音（tts-1-hd · nova/shimmer）</span>'
@@ -1453,7 +1488,7 @@ function fmtTime(ts) {
 function renderRecList(recs) {
   const list = document.getElementById('rec-list');
   if (!recs.length) {
-    list.innerHTML = '<div class="rec-empty">还没有录音，点击下方按钮开始。</div>';
+    list.innerHTML = '';
     return;
   }
   const sorted = [...recs].sort((a, b) => b.ts - a.ts);
@@ -1470,6 +1505,11 @@ function openRecDrawer(cid) {
   _recCid = cid;
   const card = all().find(c => c.id === cid);
   document.getElementById('r-card-label').textContent = card ? (card.cn || card.ja || '') : '';
+  document.getElementById('r-ja').textContent = card?.ja || '';
+  document.getElementById('r-furigana').textContent = card?.furigana || '';
+  document.getElementById('r-en').textContent = card?.en || '';
+  document.getElementById('rec-preview').style.display = card ? 'block' : 'none';
+  document.getElementById('r-furigana').style.display = (card?.furigana && st.showFurigana) ? 'block' : 'none';
   document.getElementById('r-overlay').classList.add('open');
   document.getElementById('r-drawer').classList.add('open');
   document.getElementById('recBtn').textContent = '🎙 开始录音';
