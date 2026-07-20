@@ -710,14 +710,38 @@ function all()  { return [...BUILT, ...st.userCards].filter(c => !st.deleted.inc
 function vKey(cid, vj) { return cid + '|' + vj; }
 
 // ── Render helpers ────────────────────────────────────────────────────────────
-const JA = {
-  'さえすれば':'〜さえすれば',
-  '自我介绍':'自己紹介',
-  '日常観点':'日常的な意見表現',
-  '日常対話':'日常対話',
-  '股票':'株式・投資',
-  '学习·就业':'学習・就職',
+const CATEGORY_META = {
+  'さえすれば': { label: '只要…就…', ja: 'さえすれば' },
+  '自我介绍': { label: '自我介绍', ja: '自己紹介' },
+  '日常観点': { label: '日常观点', ja: '日常観点' },
+  '日常対話': { label: '日常对话', ja: '日常対話' },
+  '股票': { label: '股票', ja: '株式・投資' },
+  '学习·就业': { label: '学习·就业', ja: '学習・就職' },
 };
+
+const CATEGORY_ALIASES = {
+  '只要…就…': 'さえすれば',
+  '只要...就...': 'さえすれば',
+  '自己介绍': '自我介绍',
+  '日常观点': '日常観点',
+  '日常对话': '日常対話',
+  '学习就业': '学习·就业',
+  '学习/就业': '学习·就业'
+};
+
+function normalizeCategoryName(name) {
+  const v = (name || '').trim();
+  return CATEGORY_ALIASES[v] || v;
+}
+
+function categoryMeta(name) {
+  const key = normalizeCategoryName(name);
+  return CATEGORY_META[key] || { label: key || '未分类', ja: '' };
+}
+
+function getCardById(cid) {
+  return st.userCards.find(c => c.id === cid) || BUILT.find(c => c.id === cid) || null;
+}
 
 function vocabHtml(card) {
   if (!card.vocab?.length) return '';
@@ -740,8 +764,9 @@ function vocabHtml(card) {
 }
 
 function cardHtml(c, showTags) {
-  const pt = showTags && c.pattern ? `<span class="tag tag-p">${c.pattern}</span>` : '';
-  const sc = showTags ? (c.scenes||[]).map(s => `<span class="tag tag-s">${s}</span>`).join('') : '';
+  const patternMeta = categoryMeta(c.pattern);
+  const pt = showTags && c.pattern ? `<span class="tag tag-p">${patternMeta.label}</span>` : '';
+  const sc = showTags ? (c.scenes||[]).map(s => `<span class="tag tag-s">${categoryMeta(s).label}</span>`).join('') : '';
   const tags = (pt || sc) ? `<div class="c-tags">${pt}${sc}</div>` : '';
   const furigana = c.furigana ? `<div class="c-furigana" lang="ja">${c.furigana}</div>` : '';
   return `<div class="card" data-cid="${c.id}">
@@ -775,10 +800,11 @@ function cardHtml(c, showTags) {
 }
 
 function sectionHtml(name, cards, showTags) {
+  const meta = categoryMeta(name);
   return `<div class="section">
     <div class="sec-head">
-      <span class="sec-name">${name}</span>
-      ${JA[name] ? `<span class="sec-ja">${JA[name]}</span>` : ''}
+      <span class="sec-name">${meta.label}</span>
+      ${meta.ja ? `<span class="sec-ja">${meta.ja}</span>` : ''}
       <span class="sec-badge">${cards.length} 张</span>
     </div>
     ${cards.map(c => cardHtml(c, showTags)).join('')}
@@ -787,7 +813,10 @@ function sectionHtml(name, cards, showTags) {
 
 function renderPattern() {
   const byP = {};
-  all().forEach(c => { const p = c.pattern || '未分类'; (byP[p] = byP[p]||[]).push(c); });
+  all().forEach(c => {
+    const p = normalizeCategoryName(c.pattern) || '未分类';
+    (byP[p] = byP[p] || []).push(c);
+  });
   document.getElementById('tab-pattern').innerHTML =
     Object.entries(byP).map(([p,cs]) => sectionHtml(p, cs, false)).join('');
 }
@@ -795,7 +824,10 @@ function renderPattern() {
 function renderScene() {
   const byS = {};
   all().forEach(c => {
-    (c.scenes?.length ? c.scenes : ['未分类']).forEach(s => { (byS[s]=byS[s]||[]).push(c); });
+    (c.scenes?.length ? c.scenes : ['未分类']).forEach(s => {
+      const key = normalizeCategoryName(s) || '未分类';
+      (byS[key] = byS[key] || []).push(c);
+    });
   });
   document.getElementById('tab-scene').innerHTML =
     Object.keys(byS).length
@@ -804,14 +836,17 @@ function renderScene() {
 }
 
 function refreshForm() {
-  const patterns = [...new Set(all().map(c => c.pattern).filter(Boolean))];
-  document.getElementById('pat-dl').innerHTML = patterns.map(p => `<option value="${p}">`).join('');
+  const patterns = [...new Set(all().map(c => normalizeCategoryName(c.pattern)).filter(Boolean))];
+  document.getElementById('pat-dl').innerHTML = patterns.map(p => {
+    const meta = categoryMeta(p);
+    return `<option value="${meta.label}">`;
+  }).join('');
   const scenes = [...new Set([
     '自我介绍','日常観点','日常対話','学习·就业','股票',
-    ...all().flatMap(c => c.scenes||[])
+    ...all().flatMap(c => c.scenes||[]).map(normalizeCategoryName)
   ])];
   document.getElementById('scene-cbs').innerHTML = scenes.map(s =>
-    `<label class="cbl"><input type="checkbox" name="scene" value="${s}"> ${s}</label>`
+    `<label class="cbl"><input type="checkbox" name="scene" value="${categoryMeta(s).label}"> ${categoryMeta(s).label}</label>`
   ).join('');
 }
 
@@ -931,8 +966,8 @@ document.getElementById('addBtn').addEventListener('click', () => {
   const furigana = document.getElementById('f-furigana').value.trim();
   const en       = document.getElementById('f-en').value.trim();
   const vocabRaw = document.getElementById('f-vocab').value.trim();
-  const pattern  = document.getElementById('f-pattern').value.trim();
-  const newSc    = document.getElementById('new-scene').value.trim();
+  const pattern  = normalizeCategoryName(document.getElementById('f-pattern').value.trim());
+  const newSc    = normalizeCategoryName(document.getElementById('new-scene').value.trim());
 
   if (!frame || !ja) { alert('请至少填写句型框架和日语例句'); return; }
 
@@ -942,7 +977,7 @@ document.getElementById('addBtn').addEventListener('click', () => {
   }).filter(v => v.j) : [];
 
   const scenes = [
-    ...[...document.querySelectorAll('input[name="scene"]:checked')].map(cb => cb.value),
+    ...[...document.querySelectorAll('input[name="scene"]:checked')].map(cb => normalizeCategoryName(cb.value)),
     ...(newSc ? [newSc] : [])
   ];
 
@@ -1030,8 +1065,8 @@ document.getElementById('undoBtnEl').addEventListener('click', undoDelete);
 let _editCid = null;
 
 function openEditDrawer(cid) {
-  const card = all().find(c => c.id === cid);
-  if (!card) return;
+  const card = getCardById(cid);
+  if (!card || st.deleted.includes(cid)) return;
   _editCid = cid;
 
   document.getElementById('ef-frame').value    = card.frame    || '';
@@ -1040,18 +1075,20 @@ function openEditDrawer(cid) {
   document.getElementById('ef-furigana').value = card.furigana || '';
   document.getElementById('ef-en').value       = card.en       || '';
   document.getElementById('ef-vocab').value    = (card.vocab||[]).map(v=>`${v.j}/${v.k}/${v.c}`).join(', ');
-  document.getElementById('ef-pattern').value  = card.pattern  || '';
+  document.getElementById('ef-pattern').value  = categoryMeta(card.pattern).label || '';
 
-  const patterns = [...new Set(all().map(c => c.pattern).filter(Boolean))];
-  document.getElementById('epat-dl').innerHTML = patterns.map(p => `<option value="${p}">`).join('');
+  const patterns = [...new Set(all().map(c => normalizeCategoryName(c.pattern)).filter(Boolean))];
+  document.getElementById('epat-dl').innerHTML = patterns.map(p => `<option value="${categoryMeta(p).label}">`).join('');
 
   const scenes = [...new Set([
     '自我介绍','日常観点','日常対話','学习·就业','股票',
-    ...all().flatMap(c => c.scenes||[])
+    ...all().flatMap(c => c.scenes||[]).map(normalizeCategoryName)
   ])];
-  document.getElementById('escene-cbs').innerHTML = scenes.map(s =>
-    `<label class="cbl"><input type="checkbox" name="escene" value="${s}"${(card.scenes||[]).includes(s)?' checked':''}> ${s}</label>`
-  ).join('');
+  document.getElementById('escene-cbs').innerHTML = scenes.map(s => {
+    const label = categoryMeta(s).label;
+    const checked = (card.scenes || []).map(normalizeCategoryName).includes(s) ? ' checked' : '';
+    return `<label class="cbl"><input type="checkbox" name="escene" value="${label}"${checked}> ${label}</label>`;
+  }).join('');
   document.getElementById('enew-scene').value = '';
 
   document.getElementById('e-overlay').classList.add('open');
@@ -1075,8 +1112,8 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
   const furigana = document.getElementById('ef-furigana').value.trim();
   const en       = document.getElementById('ef-en').value.trim();
   const vocabRaw = document.getElementById('ef-vocab').value.trim();
-  const pattern  = document.getElementById('ef-pattern').value.trim();
-  const newSc    = document.getElementById('enew-scene').value.trim();
+  const pattern  = normalizeCategoryName(document.getElementById('ef-pattern').value.trim());
+  const newSc    = normalizeCategoryName(document.getElementById('enew-scene').value.trim());
 
   if (!frame || !ja) { alert('请至少填写句型框架和日语例句'); return; }
 
@@ -1086,7 +1123,7 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
   }).filter(v => v.j) : [];
 
   const scenes = [
-    ...[...document.querySelectorAll('input[name="escene"]:checked')].map(cb => cb.value),
+    ...[...document.querySelectorAll('input[name="escene"]:checked')].map(cb => normalizeCategoryName(cb.value)),
     ...(newSc ? [newSc] : [])
   ];
 
@@ -1417,11 +1454,30 @@ document.getElementById('importFile').addEventListener('change', e => {
 
 // ── Recording (IndexedDB) ─────────────────────────────────────────────────────
 const MAX_RECS = 4;
+const REC_MIME_CANDIDATES = [
+  'audio/mp4;codecs=mp4a.40.2',
+  'audio/mp4',
+  'audio/aac',
+  'audio/webm;codecs=opus',
+  'audio/webm'
+];
 let _recDB = null;
 let _recCid = null;
 let _mediaRecorder = null;
 let _recChunks = [];
 let _recAudio = null;
+let _recMimeType = '';
+
+function getSupportedRecMimeType() {
+  if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+  return REC_MIME_CANDIDATES.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function canPlayBlobType(type) {
+  if (!type) return true;
+  const audio = document.createElement('audio');
+  return !!audio.canPlayType(type);
+}
 
 function openRecDB() {
   if (_recDB) return Promise.resolve(_recDB);
@@ -1449,12 +1505,12 @@ function dbGetRecs(cid) {
   }));
 }
 
-function dbAddRec(cid, blob) {
+function dbAddRec(cid, blob, mimeType) {
   return openRecDB().then(db => new Promise((resolve, reject) => {
     const tx = db.transaction('recordings', 'readwrite');
     const store = tx.objectStore('recordings');
     const ts = Date.now();
-    const req = store.add({ cid, blob, ts });
+    const req = store.add({ cid, blob, mimeType: mimeType || blob.type || '', ts });
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   }));
@@ -1492,13 +1548,16 @@ function renderRecList(recs) {
     return;
   }
   const sorted = [...recs].sort((a, b) => b.ts - a.ts);
-  list.innerHTML = sorted.map((r, i) => `
+  list.innerHTML = sorted.map((r, i) => {
+    const playable = canPlayBlobType(r.mimeType || r.blob?.type || '');
+    return `
     <div class="rec-item" data-rid="${r.id}">
-      <span class="rec-item-label">录音 ${sorted.length - i} &nbsp;·&nbsp; ${fmtTime(r.ts)}</span>
-      <button class="rec-play-btn" data-rid="${r.id}">▶ 播放</button>
+      <span class="rec-item-label">录音 ${sorted.length - i} &nbsp;·&nbsp; ${fmtTime(r.ts)}${playable ? '' : ' · 当前设备可能不支持'}</span>
+      <button class="rec-play-btn" data-rid="${r.id}"${playable ? '' : ' disabled style="opacity:.45;cursor:not-allowed"'}>▶ 播放</button>
       <button class="rec-del-btn" data-rid="${r.id}">删除</button>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function openRecDrawer(cid) {
@@ -1565,16 +1624,19 @@ document.getElementById('recBtn').addEventListener('click', async () => {
     return;
   }
   try {
+    if (!window.MediaRecorder) throw new Error('当前浏览器不支持录音');
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     _recChunks = [];
-    _mediaRecorder = new MediaRecorder(stream);
+    _recMimeType = getSupportedRecMimeType();
+    _mediaRecorder = _recMimeType ? new MediaRecorder(stream, { mimeType: _recMimeType }) : new MediaRecorder(stream);
     _mediaRecorder.ondataavailable = e => { if (e.data.size) _recChunks.push(e.data); };
     _mediaRecorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
       btn.textContent = '🎙 开始录音'; btn.classList.remove('recording');
       if (!_recChunks.length) return;
-      const blob = new Blob(_recChunks, { type: 'audio/webm' });
-      await dbAddRec(_recCid, blob);
+      const blobType = _mediaRecorder.mimeType || _recMimeType || _recChunks[0]?.type || '';
+      const blob = new Blob(_recChunks, { type: blobType });
+      await dbAddRec(_recCid, blob, blobType);
       await dbTrimRecs(_recCid);
       const recs = await dbGetRecs(_recCid);
       renderRecList(recs);
