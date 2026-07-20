@@ -275,6 +275,31 @@ input[type=checkbox] { accent-color: var(--acc); }
   border: 1px solid var(--bd); border-radius: 11px;
   padding: 0 18px; font-size: 14px; cursor: pointer; font-family: inherit;
 }
+
+/* BATCH SELECT */
+.batch-mode .card { position: relative; }
+.sel-dot {
+  display: none; position: absolute; top: 12px; right: 12px;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--bd); background: var(--card);
+  font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
+  pointer-events: none; color: transparent; transition: all .15s; z-index: 1;
+}
+.batch-mode .sel-dot { display: block; }
+.card.sel .sel-dot { border-color: var(--acc); background: var(--acc); color: #fff; }
+.card.sel { border-color: var(--acc) !important; }
+.batch-mode .card-back { display: none; }
+body.batch-mode { padding-bottom: 88px; }
+#batchBtn.on { color: var(--acc); border-color: var(--acc); }
+
+/* BATCH BAR */
+.batch-bar {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--card); border-top: 2px solid var(--bd);
+  padding: 10px 14px 32px; z-index: 250; align-items: center; gap: 8px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.13);
+}
+.batch-bar.show { display: flex; }
 </style>
 </head>
 <body>
@@ -298,6 +323,7 @@ input[type=checkbox] { accent-color: var(--acc); }
 
 <div class="settings-bar">
   <label><input type="checkbox" id="hideMastered"> 隐藏已掌握单词</label>
+  <button id="batchBtn" style="margin-left:auto;background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--mute);transition:color .15s,border-color .15s">☑ 批量</button>
 </div>
 
 <div class="tab-content active" id="tab-pattern"></div>
@@ -343,6 +369,14 @@ input[type=checkbox] { accent-color: var(--acc); }
     </div>
     <button class="submit-btn" id="addBtn">保存卡片</button>
     <div class="toast" id="toast">✓ 卡片已添加！</div>
+
+    <div style="margin-top:28px;border-top:1px solid var(--bd);padding-top:20px">
+      <div class="fs-title" style="margin-top:0">批量添加（粘贴 JSON）</div>
+      <div style="font-size:12px;color:var(--mute);margin-bottom:8px;line-height:1.6">粘贴一个卡片数组，格式与导出备份相同。每张卡片至少需要 <code>ja</code> 字段。</div>
+      <textarea class="fta" id="f-bulk" placeholder='[{"frame":"___さえすれば","cn":"只要…就…","ja":"日语例句","en":"English","vocab":[],"pattern":"句型","scenes":["场景"]}]' style="min-height:90px;font-size:12px;font-family:monospace"></textarea>
+      <button class="submit-btn" id="bulkAddBtn" style="margin-top:10px;background:var(--grn)">批量导入</button>
+      <div class="toast" id="bulk-toast"></div>
+    </div>
   </div>
 </div>
 
@@ -368,6 +402,24 @@ input[type=checkbox] { accent-color: var(--acc); }
     <button class="btn-sec" id="listVoicesBtn" style="font-size:12px">查看本机可用语音列表</button>
     <div id="voice-list" style="margin-top:8px;font-size:11px;color:var(--mute);max-height:160px;overflow-y:auto;display:none;white-space:pre-wrap;line-height:1.8"></div>
   </div>
+  <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:14px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">📦 数据备份</div>
+    <div style="font-size:12px;color:var(--mute);margin-bottom:10px;line-height:1.6">导出：把你添加的卡片和掌握记录保存成 JSON 文件。<br>导入：从备份文件还原，已存在的卡片自动跳过。</div>
+    <div class="btn-row">
+      <button class="btn-sec" id="exportBtn" style="font-size:13px;flex:1;height:40px">⬇ 导出备份</button>
+      <button class="btn-sec" id="importBtn" style="font-size:13px;flex:1;height:40px">⬆ 导入</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+    <div id="import-result" style="margin-top:8px;font-size:12px;color:var(--grn);display:none;text-align:center"></div>
+  </div>
+</div>
+
+<!-- Batch action bar -->
+<div class="batch-bar" id="batchBar">
+  <span id="batchCount" style="flex:1;font-size:14px;font-weight:600;color:var(--text)">已选 0 张</span>
+  <button class="btn-sec" id="batchSelectAll" style="font-size:13px">全选</button>
+  <button class="btn-sec" id="batchDeleteBtn" style="font-size:13px;background:var(--red2);border-color:var(--red);color:var(--red)">删除选中</button>
+  <button class="btn-sec" id="batchCancelBtn" style="font-size:13px">取消</button>
 </div>
 
 <!-- Edit Drawer -->
@@ -504,6 +556,10 @@ const BUILT = [
     pattern:'日常観点', scenes:['日常観点'] }
 ];
 
+// ── Batch state ───────────────────────────────────────────────────────────────
+let batchMode = false;
+const batchSel = new Set();
+
 // ── State ────────────────────────────────────────────────────────────────────
 let st = {};
 try { st = JSON.parse(localStorage.getItem('jpSt') || '{}'); } catch {}
@@ -553,6 +609,7 @@ function cardHtml(c, showTags) {
   const sc = showTags ? (c.scenes||[]).map(s => `<span class="tag tag-s">${s}</span>`).join('') : '';
   const tags = (pt || sc) ? `<div class="c-tags">${pt}${sc}</div>` : '';
   return `<div class="card" data-cid="${c.id}">
+    <div class="sel-dot">✓</div>
     <div class="card-front">
       <div class="c-frame" lang="ja">${c.frame}</div>
       <div class="c-cn">${c.cn}</div>
@@ -620,7 +677,12 @@ function refreshForm() {
   ).join('');
 }
 
-function renderAll() { renderPattern(); renderScene(); refreshForm(); }
+function renderAll() {
+  renderPattern(); renderScene(); refreshForm();
+  if (batchMode) batchSel.forEach(cid =>
+    document.querySelectorAll('.card[data-cid="' + cid + '"]').forEach(el => el.classList.add('sel'))
+  );
+}
 
 // ── Events ────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -671,9 +733,18 @@ document.body.addEventListener('click', e => {
     return;
   }
 
-  // Toggle card
+  // Toggle card / batch select
   const card = e.target.closest('.card');
-  if (card) card.classList.toggle('open');
+  if (card) {
+    if (batchMode) {
+      const cid = card.dataset.cid;
+      if (batchSel.has(cid)) { batchSel.delete(cid); card.classList.remove('sel'); }
+      else { batchSel.add(cid); card.classList.add('sel'); }
+      updateBatchBar();
+    } else {
+      card.classList.toggle('open');
+    }
+  }
 });
 
 const hmCb = document.getElementById('hideMastered');
@@ -949,6 +1020,137 @@ document.getElementById('listVoicesBtn').addEventListener('click', () => {
   if (!voices.length) { box.textContent = '暂无语音（请稍后再试）'; box.style.display = 'block'; return; }
   box.textContent = voices.map(v => `${v.lang}  ${v.name}`).join('\n');
   box.style.display = 'block';
+});
+
+// ── Batch mode ────────────────────────────────────────────────────────────────
+function updateBatchBar() {
+  document.getElementById('batchCount').textContent = '已选 ' + batchSel.size + ' 张';
+  document.getElementById('batchDeleteBtn').style.opacity = batchSel.size ? '1' : '.45';
+}
+
+function enterBatch() {
+  batchMode = true;
+  batchSel.clear();
+  document.getElementById('batchBar').classList.add('show');
+  document.body.classList.add('batch-mode');
+  document.getElementById('batchBtn').classList.add('on');
+  updateBatchBar();
+}
+
+function exitBatch() {
+  batchMode = false;
+  batchSel.clear();
+  document.getElementById('batchBar').classList.remove('show');
+  document.body.classList.remove('batch-mode');
+  document.getElementById('batchBtn').classList.remove('on');
+  document.querySelectorAll('.card.sel').forEach(el => el.classList.remove('sel'));
+}
+
+document.getElementById('batchBtn').addEventListener('click', () => {
+  batchMode ? exitBatch() : enterBatch();
+});
+
+document.getElementById('batchSelectAll').addEventListener('click', () => {
+  const cards = document.querySelectorAll('.tab-content.active .card[data-cid]');
+  const allSel = [...cards].every(c => batchSel.has(c.dataset.cid));
+  cards.forEach(c => {
+    if (allSel) { batchSel.delete(c.dataset.cid); c.classList.remove('sel'); }
+    else        { batchSel.add(c.dataset.cid);    c.classList.add('sel');    }
+  });
+  updateBatchBar();
+});
+
+document.getElementById('batchDeleteBtn').addEventListener('click', () => {
+  if (!batchSel.size) return;
+  if (!confirm('确定删除选中的 ' + batchSel.size + ' 张卡片？')) return;
+  batchSel.forEach(cid => {
+    const idx = st.userCards.findIndex(c => c.id === cid);
+    if (idx !== -1) st.userCards.splice(idx, 1);
+    else if (!st.deleted.includes(cid)) st.deleted.push(cid);
+  });
+  save();
+  exitBatch();
+  renderAll();
+});
+
+document.getElementById('batchCancelBtn').addEventListener('click', exitBatch);
+
+// ── Bulk add ──────────────────────────────────────────────────────────────────
+document.getElementById('bulkAddBtn').addEventListener('click', () => {
+  const raw = document.getElementById('f-bulk').value.trim();
+  if (!raw) return;
+  let cards;
+  try {
+    const parsed = JSON.parse(raw);
+    cards = Array.isArray(parsed) ? parsed : parsed.userCards;
+    if (!Array.isArray(cards)) throw new Error();
+  } catch {
+    alert('JSON 格式错误，请检查后重试'); return;
+  }
+  const existingIds = new Set(st.userCards.map(c => c.id));
+  const now = Date.now();
+  const fresh = cards
+    .filter(c => c && c.ja && !existingIds.has(c.id))
+    .map((c, i) => ({
+      id: 'u' + (now + i),
+      frame: c.frame || '', cn: c.cn || '', ja: c.ja,
+      en: c.en || '', vocab: c.vocab || [],
+      pattern: c.pattern || '', scenes: c.scenes || []
+    }));
+  if (!fresh.length) { alert('没有新卡片可添加（可能已全部存在）'); return; }
+  st.userCards.push(...fresh);
+  save(); renderAll();
+  document.getElementById('f-bulk').value = '';
+  const t = document.getElementById('bulk-toast');
+  t.textContent = '✓ 成功添加 ' + fresh.length + ' 张！';
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2500);
+});
+
+// ── Export / Import ───────────────────────────────────────────────────────────
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const payload = { version: 1, userCards: st.userCards, mastered: st.mastered, deleted: st.deleted };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  a.href = url; a.download = 'jp-cards-backup-' + ds + '.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFile').value = '';
+  document.getElementById('importFile').click();
+});
+
+document.getElementById('importFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data.userCards)) throw new Error('格式不正确');
+      const existingIds = new Set(st.userCards.map(c => c.id));
+      const fresh = data.userCards.filter(c => c && c.id && !existingIds.has(c.id));
+      st.userCards.push(...fresh);
+      (data.mastered || []).forEach(k => { if (!st.mastered.includes(k)) st.mastered.push(k); });
+      (data.deleted  || []).forEach(k => { if (!st.deleted.includes(k))  st.deleted.push(k);  });
+      save();
+      renderAll();
+      const res = document.getElementById('import-result');
+      const skipped = data.userCards.length - fresh.length;
+      res.textContent = '✓ 导入完成：新增 ' + fresh.length + ' 张' + (skipped ? '，跳过 ' + skipped + ' 张（已存在）' : '');
+      res.style.display = 'block';
+      setTimeout(() => { res.style.display = 'none'; }, 4000);
+    } catch(err) {
+      alert('导入失败：' + err.message);
+    }
+  };
+  reader.readAsText(file);
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
