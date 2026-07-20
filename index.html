@@ -50,7 +50,7 @@ body {
 }
 
 /* Japanese content: JP font first, no fallback to JP fonts for CN glyphs */
-.c-frame, .c-ja, .vj, .vk {
+.c-frame, .c-ja, .c-furigana, .vj, .vk {
   font-family: 'Yu Gothic UI', 'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP',
                'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
 }
@@ -91,6 +91,7 @@ header {
 .settings-bar {
   background: var(--bg2); border-bottom: 1px solid var(--bd);
   padding: 8px 16px; display: flex; gap: 16px; align-items: center;
+  flex-wrap: wrap;
 }
 .settings-bar label {
   display: flex; align-items: center; gap: 6px;
@@ -147,10 +148,18 @@ input[type=checkbox] { accent-color: var(--acc); }
 }
 .c-ja {
   font-size: 15.5px; font-weight: 500; line-height: 1.85;
-  color: var(--text); margin-bottom: 10px; overflow-wrap: break-word;
+  color: var(--text); margin-bottom: 6px; overflow-wrap: break-word;
   cursor: pointer; border-radius: 7px; transition: background .15s;
 }
 .c-ja:hover, .c-ja.speaking { background: var(--acc2); }
+/* FURIGANA */
+.c-furigana {
+  font-size: 12px; color: var(--mute); line-height: 1.7;
+  margin-bottom: 6px; overflow-wrap: break-word;
+  padding: 3px 6px; background: var(--bg2); border-radius: 5px;
+  display: none;
+}
+body.show-furigana .c-furigana { display: block; }
 .c-en {
   font-size: 13px; color: var(--mute); line-height: 1.6; font-style: italic;
   cursor: pointer; border-radius: 7px; transition: background .15s;
@@ -212,6 +221,9 @@ input[type=checkbox] { accent-color: var(--acc); }
 }
 .ca-btn:hover { background: var(--bd); }
 .ca-del:hover { background: var(--red2); border-color: var(--red); color: var(--red); }
+.ca-rec { }
+.ca-rec.recording { background: var(--red2); border-color: var(--red); color: var(--red); animation: pulse .8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 
 /* ADD FORM */
 .add-form { padding: 20px 14px 50px; }
@@ -300,6 +312,57 @@ body.batch-mode { padding-bottom: 88px; }
   box-shadow: 0 -4px 20px rgba(0,0,0,.13);
 }
 .batch-bar.show { display: flex; }
+
+/* UNDO TOAST */
+.undo-toast {
+  display: none; position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  background: #333; color: #fff; border-radius: 24px;
+  padding: 10px 8px 10px 18px; font-size: 14px;
+  z-index: 9000; align-items: center; gap: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.35); white-space: nowrap;
+  max-width: 90vw;
+}
+.undo-toast.show { display: flex; }
+.undo-btn {
+  background: var(--acc); color: #fff; border: none;
+  border-radius: 14px; padding: 5px 14px; font-size: 13px;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+}
+
+/* RECORDING DRAWER */
+.rec-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.rec-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 10px; padding: 10px 12px;
+}
+.rec-item-label { flex: 1; font-size: 13px; color: var(--mute); }
+.rec-play-btn, .rec-del-btn {
+  background: none; border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 5px 11px;
+  font-size: 13px; cursor: pointer; font-family: inherit; color: var(--mute);
+  transition: all .15s;
+}
+.rec-play-btn:hover { border-color: var(--acc); color: var(--acc); }
+.rec-del-btn:hover { border-color: var(--red); color: var(--red); background: var(--red2); }
+.rec-play-btn.playing { border-color: var(--grn); color: var(--grn); }
+#recBtn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all .2s;
+  background: var(--acc); color: #fff;
+}
+#recBtn.recording { background: var(--red); animation: pulse .8s infinite; }
+.rec-empty { font-size: 13px; color: var(--mute); text-align: center; padding: 18px 0; }
+
+/* BATCH ADD easy format */
+.easy-format-example {
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 8px; padding: 10px 12px; font-size: 12px;
+  color: var(--mute); font-family: monospace; white-space: pre-wrap;
+  line-height: 1.7; margin-bottom: 8px;
+}
 </style>
 </head>
 <body>
@@ -323,6 +386,7 @@ body.batch-mode { padding-bottom: 88px; }
 
 <div class="settings-bar">
   <label><input type="checkbox" id="hideMastered"> 隐藏已掌握单词</label>
+  <label><input type="checkbox" id="showFurigana"> 显示假名</label>
   <button id="batchBtn" style="margin-left:auto;background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--mute);transition:color .15s,border-color .15s">☑ 批量</button>
 </div>
 
@@ -345,6 +409,10 @@ body.batch-mode { padding-bottom: 88px; }
     <div class="fg">
       <label>完整日语例句</label>
       <textarea class="fta" id="f-ja" placeholder="ここに来さえすれば、ごちそうします。"></textarea>
+    </div>
+    <div class="fg">
+      <label>假名注音 <span style="font-weight:400;color:var(--mute)">（可选，整句平假名）</span></label>
+      <textarea class="fta" id="f-furigana" placeholder="ここにきさえすれば、ごちそうします。" style="min-height:52px"></textarea>
     </div>
     <div class="fg">
       <label>英文翻译</label>
@@ -371,9 +439,23 @@ body.batch-mode { padding-bottom: 88px; }
     <div class="toast" id="toast">✓ 卡片已添加！</div>
 
     <div style="margin-top:28px;border-top:1px solid var(--bd);padding-top:20px">
-      <div class="fs-title" style="margin-top:0">批量添加（粘贴 JSON）</div>
-      <div style="font-size:12px;color:var(--mute);margin-bottom:8px;line-height:1.6">粘贴一个卡片数组，格式与导出备份相同。每张卡片至少需要 <code>ja</code> 字段。</div>
-      <textarea class="fta" id="f-bulk" placeholder='[{"frame":"___さえすれば","cn":"只要…就…","ja":"日语例句","en":"English","vocab":[],"pattern":"句型","scenes":["场景"]}]' style="min-height:90px;font-size:12px;font-family:monospace"></textarea>
+      <div class="fs-title" style="margin-top:0">批量添加（简易格式）</div>
+      <div style="font-size:12px;color:var(--mute);margin-bottom:8px;line-height:1.6">
+        每张卡片填几行，<strong>空行</strong>分隔多张。只有「日语」是必填的。
+      </div>
+      <div class="easy-format-example">日语: ここに来さえすれば、ごちそうします。
+中文: 只要来这里，我就请客
+框架: ___さえすれば、___
+假名: ここにきさえすれば、ごちそうします。
+英文: I'll treat you to dinner as long as you come here.
+单词: 株/かぶ/股票, 上がる/あがる/上涨
+句型: さえすれば
+场景: 日常対話, 学习·就业</div>
+      <textarea class="fta" id="f-bulk" placeholder="日语: ここに来さえすれば、ごちそうします。
+中文: 只要来这里，我就请客
+场景: 日常対話
+
+日语: 下一张卡片…" style="min-height:120px"></textarea>
       <button class="submit-btn" id="bulkAddBtn" style="margin-top:10px;background:var(--grn)">批量导入</button>
       <div class="toast" id="bulk-toast"></div>
     </div>
@@ -441,6 +523,10 @@ body.batch-mode { padding-bottom: 88px; }
       <textarea class="fta" id="ef-ja"></textarea>
     </div>
     <div class="fg">
+      <label>假名注音 <span style="font-weight:400;color:var(--mute)">（可选，整句平假名）</span></label>
+      <textarea class="fta" id="ef-furigana" style="min-height:52px"></textarea>
+    </div>
+    <div class="fg">
       <label>英文翻译</label>
       <textarea class="fta" id="ef-en"></textarea>
     </div>
@@ -467,6 +553,22 @@ body.batch-mode { padding-bottom: 88px; }
   </div>
 </div>
 
+<!-- Recording Drawer -->
+<div class="d-overlay" id="r-overlay"></div>
+<div class="d-panel" id="r-drawer">
+  <div class="drawer-title">🎙 我的录音</div>
+  <div class="drawer-desc" id="r-card-label" style="font-size:13px;margin-bottom:4px"></div>
+  <div style="font-size:11px;color:var(--mute)">最多保存 4 条，新录音自动替换最旧的一条。</div>
+  <div class="rec-list" id="rec-list"></div>
+  <button id="recBtn">🎙 开始录音</button>
+</div>
+
+<!-- Undo Toast -->
+<div class="undo-toast" id="undoToast">
+  <span id="undoMsg">已删除</span>
+  <button class="undo-btn" id="undoBtnEl">撤销</button>
+</div>
+
 <script>
 // ── Built-in data ────────────────────────────────────────────────────────────
 const BUILT = [
@@ -474,12 +576,14 @@ const BUILT = [
     cn:'只要来这里，我就请客',
     ja:'ここに来さえすれば、ごちそうします。',
     en:"I'll treat you to dinner as long as you come here.",
+    furigana:'ここにきさえすれば、ごちそうします。',
     vocab:[], pattern:'さえすれば', scenes:['日常対話'] },
 
   { id:'b02', frame:'___が___上がりさえすれば、___',
     cn:'股票涨10点就卖出',
     ja:'この株が10ポイント上がりさえすれば、売ります。',
     en:'I will sell this stock as long as it rises 10 points.',
+    furigana:'このかぶが10ポイントあがりさえすれば、うります。',
     vocab:[{j:'株',k:'かぶ',c:'股票'},{j:'上がる',k:'あがる',c:'上涨'},{j:'売る',k:'うる',c:'卖出'}],
     pattern:'さえすれば', scenes:['股票'] },
 
@@ -487,6 +591,7 @@ const BUILT = [
     cn:'股票跌10点就买入',
     ja:'この株が10ポイント下がりさえすれば、買います。',
     en:'I will buy this stock as long as it drops 10 points.',
+    furigana:'このかぶが10ポイントさがりさえすれば、かいます。',
     vocab:[{j:'株',k:'かぶ',c:'股票'},{j:'下がる',k:'さがる',c:'下跌'},{j:'買う',k:'かう',c:'买入'}],
     pattern:'さえすれば', scenes:['股票'] },
 
@@ -494,6 +599,7 @@ const BUILT = [
     cn:'他一出门就会被杀手杀掉',
     ja:'彼が外に出さえすれば、暗殺者に殺されます。',
     en:'He will be killed by an assassin as soon as he goes out.',
+    furigana:'かれがそとにでさえすれば、あんさつしゃにころされます。',
     vocab:[{j:'暗殺者',k:'あんさつしゃ',c:'杀手'}],
     pattern:'さえすれば', scenes:['日常対話'] },
 
@@ -501,6 +607,7 @@ const BUILT = [
     cn:'只要安静、远离电梯就行',
     ja:'静かでさえあり、エレベーターから離れていさえすれば大丈夫です。',
     en:"It's fine as long as it's quiet and far from the elevator.",
+    furigana:'しずかでさえあり、エレベーターからはなれていさえすればだいじょうぶです。',
     vocab:[{j:'静か',k:'しずか',c:'安静'},{j:'離れる',k:'はなれる',c:'远离'}],
     pattern:'さえすれば', scenes:['日常対話'] },
 
@@ -508,6 +615,7 @@ const BUILT = [
     cn:'只要卖出去就能赚钱',
     ja:'売れさえすれば儲かります。',
     en:'You can make money as long as it sells.',
+    furigana:'うれさえすればもうかります。',
     vocab:[{j:'売れる',k:'うれる',c:'卖得出去'},{j:'儲かる',k:'もうかる',c:'赚钱'}],
     pattern:'さえすれば', scenes:['股票'] },
 
@@ -515,6 +623,7 @@ const BUILT = [
     cn:'答辩通过就能拿到学位证',
     ja:'卒業審査に通りさえすれば学位記がもらえます。',
     en:'You can get a degree certificate as long as you pass the defense.',
+    furigana:'そつぎょうしんさにとおりさえすればがくいきがもらえます。',
     vocab:[{j:'卒業審査',k:'そつぎょうしんさ',c:'毕业答辩'},{j:'学位記',k:'がくいき',c:'学位证'}],
     pattern:'さえすれば', scenes:['学习·就业'] },
 
@@ -522,6 +631,7 @@ const BUILT = [
     cn:'只要有学位证就能找工作',
     ja:'学位記さえあれば仕事を探すことができます。',
     en:'You can look for a job as long as you have a degree certificate.',
+    furigana:'がくいきさえあればしごとをさがすことができます。',
     vocab:[{j:'学位記',k:'がくいき',c:'学位证'}],
     pattern:'さえすれば', scenes:['学习·就业'] },
 
@@ -529,6 +639,7 @@ const BUILT = [
     cn:'面试通过就有工作了',
     ja:'面接に通りさえすれば仕事がもらえます。',
     en:'You can get the job as long as you pass the interview.',
+    furigana:'めんせつにとおりさえすればしごとがもらえます。',
     vocab:[{j:'面接',k:'めんせつ',c:'面试'}],
     pattern:'さえすれば', scenes:['学习·就业'] },
 
@@ -537,6 +648,7 @@ const BUILT = [
     cn:'（自我介绍）听力比口语好，回答会磕巴，请见谅',
     ja:'日本語は聴き取りの方が会話よりだいぶ上手です。なので普通に話して大丈夫、だいたい理解できます。ただ返答する時どもりやすいので、どうかご容赦ください。',
     en:"My Japanese listening is much better than my speaking, so just talk normally—I can mostly understand you. But I may stutter a bit when replying, please bear with me.",
+    furigana:'にほんごはききとりのほうがかいわよりだいぶじょうずです。なのでふつうにはなしてだいじょうぶ、だいたいりかいできます。ただへんとうするときどもりやすいので、どうかごようしゃください。',
     vocab:[
       {j:'聴き取り',k:'ききとり',c:'听力'},
       {j:'どもる',k:'どもる',c:'结巴、磕巴'},
@@ -549,6 +661,7 @@ const BUILT = [
     cn:'我们的情况不是个例，而是非常常见的',
     ja:'私たちの状況は特別な例ではなく、むしろ非常によく見られるケースだと思います。',
     en:"I don't think our situation is an isolated case; it's extremely common instead.",
+    furigana:'わたしたちのじょうきょうはとくべつなれいではなく、むしろひじょうによくみられるケースだとおもいます。',
     vocab:[
       {j:'特別な例',k:'とくべつなれい',c:'个例、特例'},
       {j:'むしろ',k:'むしろ',c:'反而、而是'}
@@ -563,12 +676,13 @@ const batchSel = new Set();
 // ── State ────────────────────────────────────────────────────────────────────
 let st = {};
 try { st = JSON.parse(localStorage.getItem('jpSt') || '{}'); } catch {}
-st.mastered  = st.mastered  || [];
-st.userCards = st.userCards || [];
-st.deleted   = st.deleted   || [];
-st.hide      = !!st.hide;
-st.theme     = st.theme     || 'light';
-st.openaiKey = st.openaiKey || '';
+st.mastered      = st.mastered      || [];
+st.userCards     = st.userCards     || [];
+st.deleted       = st.deleted       || [];
+st.hide          = !!st.hide;
+st.showFurigana  = !!st.showFurigana;
+st.theme         = st.theme         || 'light';
+st.openaiKey     = st.openaiKey     || '';
 
 function save() { localStorage.setItem('jpSt', JSON.stringify(st)); }
 function all()  { return [...BUILT, ...st.userCards].filter(c => !st.deleted.includes(c.id)); }
@@ -608,6 +722,7 @@ function cardHtml(c, showTags) {
   const pt = showTags && c.pattern ? `<span class="tag tag-p">${c.pattern}</span>` : '';
   const sc = showTags ? (c.scenes||[]).map(s => `<span class="tag tag-s">${s}</span>`).join('') : '';
   const tags = (pt || sc) ? `<div class="c-tags">${pt}${sc}</div>` : '';
+  const furigana = c.furigana ? `<div class="c-furigana" lang="ja">${c.furigana}</div>` : '';
   return `<div class="card" data-cid="${c.id}">
     <div class="sel-dot">✓</div>
     <div class="card-front">
@@ -623,11 +738,13 @@ function cardHtml(c, showTags) {
         <div class="card-back-content">
           <div class="back-lbl">日语例句 <span class="tts-hint">🔊 点击朗读</span></div>
           <div class="c-ja" lang="ja">${c.ja}</div>
+          ${furigana}
           <div class="c-en">${c.en}</div>
           ${vocabHtml(c)}
           ${tags}
           <div class="card-actions">
             <button class="ca-btn" data-action="edit" data-cid="${c.id}">✏ 编辑</button>
+            <button class="ca-btn ca-rec" data-action="record" data-cid="${c.id}">🎙 录音</button>
             <button class="ca-btn ca-del" data-action="delete" data-cid="${c.id}">删除</button>
           </div>
         </div>
@@ -725,11 +842,15 @@ document.body.addEventListener('click', e => {
   const editBtn = e.target.closest('[data-action="edit"]');
   if (editBtn) { e.stopPropagation(); openEditDrawer(editBtn.dataset.cid); return; }
 
+  // Record
+  const recBtn2 = e.target.closest('[data-action="record"]');
+  if (recBtn2) { e.stopPropagation(); openRecDrawer(recBtn2.dataset.cid); return; }
+
   // Delete card
   const delBtn = e.target.closest('[data-action="delete"]');
   if (delBtn) {
     e.stopPropagation();
-    if (confirm('确定删除这张卡片？')) deleteCard(delBtn.dataset.cid);
+    deleteCards([delBtn.dataset.cid]);
     return;
   }
 
@@ -751,6 +872,15 @@ const hmCb = document.getElementById('hideMastered');
 hmCb.checked = st.hide;
 hmCb.addEventListener('change', e => { st.hide = e.target.checked; save(); renderAll(); });
 
+const sfCb = document.getElementById('showFurigana');
+sfCb.checked = st.showFurigana;
+sfCb.addEventListener('change', e => {
+  st.showFurigana = e.target.checked;
+  document.body.classList.toggle('show-furigana', st.showFurigana);
+  save();
+});
+if (st.showFurigana) document.body.classList.add('show-furigana');
+
 document.documentElement.dataset.theme = st.theme;
 document.getElementById('themeBtn').textContent = st.theme === 'dark' ? '☀️' : '🌙';
 document.getElementById('themeBtn').addEventListener('click', () => {
@@ -764,6 +894,7 @@ document.getElementById('addBtn').addEventListener('click', () => {
   const frame    = document.getElementById('f-frame').value.trim();
   const cn       = document.getElementById('f-cn').value.trim();
   const ja       = document.getElementById('f-ja').value.trim();
+  const furigana = document.getElementById('f-furigana').value.trim();
   const en       = document.getElementById('f-en').value.trim();
   const vocabRaw = document.getElementById('f-vocab').value.trim();
   const pattern  = document.getElementById('f-pattern').value.trim();
@@ -781,9 +912,9 @@ document.getElementById('addBtn').addEventListener('click', () => {
     ...(newSc ? [newSc] : [])
   ];
 
-  st.userCards.push({ id:'u'+Date.now(), frame, cn, ja, en, vocab, pattern, scenes });
+  st.userCards.push({ id:'u'+Date.now(), frame, cn, ja, furigana, en, vocab, pattern, scenes });
   save();
-  ['f-frame','f-cn','f-ja','f-en','f-vocab','f-pattern','new-scene'].forEach(id => {
+  ['f-frame','f-cn','f-ja','f-furigana','f-en','f-vocab','f-pattern','new-scene'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.querySelectorAll('input[name="scene"]').forEach(cb => cb.checked = false);
@@ -793,17 +924,73 @@ document.getElementById('addBtn').addEventListener('click', () => {
   renderAll();
 });
 
-// ── Delete ────────────────────────────────────────────────────────────────────
-function deleteCard(cid) {
-  const userIdx = st.userCards.findIndex(c => c.id === cid);
-  if (userIdx !== -1) {
-    st.userCards.splice(userIdx, 1);
-  } else {
-    if (!st.deleted.includes(cid)) st.deleted.push(cid);
-  }
+// ── Delete with Undo ──────────────────────────────────────────────────────────
+let _undoPending = null;
+
+function deleteCards(cids) {
+  // Save backup before deletion
+  const backup = cids.map(cid => {
+    const userIdx = st.userCards.findIndex(c => c.id === cid);
+    if (userIdx !== -1) {
+      return { type: 'user', card: { ...st.userCards[userIdx] }, idx: userIdx };
+    } else {
+      return { type: 'builtin', id: cid };
+    }
+  });
+
+  // Perform deletion
+  // Sort user indices descending so splice doesn't shift positions
+  const userRemovals = backup
+    .filter(b => b.type === 'user')
+    .map(b => b.idx)
+    .sort((a, z) => z - a);
+  userRemovals.forEach(idx => st.userCards.splice(idx, 1));
+  backup.filter(b => b.type === 'builtin').forEach(b => {
+    if (!st.deleted.includes(b.id)) st.deleted.push(b.id);
+  });
   save();
   renderAll();
+
+  // Cancel any previous undo
+  if (_undoPending) { clearTimeout(_undoPending.timer); }
+  _undoPending = {
+    backup,
+    timer: setTimeout(() => {
+      _undoPending = null;
+      hideUndoToast();
+    }, 5000)
+  };
+  const msg = cids.length === 1 ? '已删除 1 张卡片' : `已删除 ${cids.length} 张卡片`;
+  showUndoToast(msg);
 }
+
+function undoDelete() {
+  if (!_undoPending) return;
+  clearTimeout(_undoPending.timer);
+  // Restore in original order (ascending index for user cards)
+  const userRestores = _undoPending.backup.filter(b => b.type === 'user').sort((a, z) => a.idx - z.idx);
+  userRestores.forEach(b => {
+    const safeIdx = Math.min(b.idx, st.userCards.length);
+    st.userCards.splice(safeIdx, 0, b.card);
+  });
+  _undoPending.backup.filter(b => b.type === 'builtin').forEach(b => {
+    const i = st.deleted.indexOf(b.id);
+    if (i !== -1) st.deleted.splice(i, 1);
+  });
+  _undoPending = null;
+  save();
+  renderAll();
+  hideUndoToast();
+}
+
+function showUndoToast(msg) {
+  document.getElementById('undoMsg').textContent = msg;
+  document.getElementById('undoToast').classList.add('show');
+}
+function hideUndoToast() {
+  document.getElementById('undoToast').classList.remove('show');
+}
+document.getElementById('undoBtnEl').addEventListener('click', undoDelete);
 
 // ── Edit drawer ───────────────────────────────────────────────────────────────
 let _editCid = null;
@@ -813,12 +1000,13 @@ function openEditDrawer(cid) {
   if (!card) return;
   _editCid = cid;
 
-  document.getElementById('ef-frame').value   = card.frame   || '';
-  document.getElementById('ef-cn').value      = card.cn      || '';
-  document.getElementById('ef-ja').value      = card.ja      || '';
-  document.getElementById('ef-en').value      = card.en      || '';
-  document.getElementById('ef-vocab').value   = (card.vocab||[]).map(v=>`${v.j}/${v.k}/${v.c}`).join(', ');
-  document.getElementById('ef-pattern').value = card.pattern || '';
+  document.getElementById('ef-frame').value    = card.frame    || '';
+  document.getElementById('ef-cn').value       = card.cn       || '';
+  document.getElementById('ef-ja').value       = card.ja       || '';
+  document.getElementById('ef-furigana').value = card.furigana || '';
+  document.getElementById('ef-en').value       = card.en       || '';
+  document.getElementById('ef-vocab').value    = (card.vocab||[]).map(v=>`${v.j}/${v.k}/${v.c}`).join(', ');
+  document.getElementById('ef-pattern').value  = card.pattern  || '';
 
   const patterns = [...new Set(all().map(c => c.pattern).filter(Boolean))];
   document.getElementById('epat-dl').innerHTML = patterns.map(p => `<option value="${p}">`).join('');
@@ -850,6 +1038,7 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
   const frame    = document.getElementById('ef-frame').value.trim();
   const cn       = document.getElementById('ef-cn').value.trim();
   const ja       = document.getElementById('ef-ja').value.trim();
+  const furigana = document.getElementById('ef-furigana').value.trim();
   const en       = document.getElementById('ef-en').value.trim();
   const vocabRaw = document.getElementById('ef-vocab').value.trim();
   const pattern  = document.getElementById('ef-pattern').value.trim();
@@ -869,11 +1058,11 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
 
   const userIdx = st.userCards.findIndex(c => c.id === _editCid);
   if (userIdx !== -1) {
-    st.userCards[userIdx] = { id: _editCid, frame, cn, ja, en, vocab, pattern, scenes };
+    st.userCards[userIdx] = { id: _editCid, frame, cn, ja, furigana, en, vocab, pattern, scenes };
   } else {
     // Built-in card: hide original, store edited copy as user card
     if (!st.deleted.includes(_editCid)) st.deleted.push(_editCid);
-    st.userCards.push({ id:'u'+Date.now(), frame, cn, ja, en, vocab, pattern, scenes });
+    st.userCards.push({ id:'u'+Date.now(), frame, cn, ja, furigana, en, vocab, pattern, scenes });
   }
 
   save();
@@ -942,20 +1131,20 @@ function getBrowserVoice(lang) {
   const pool = voices.filter(v => v.lang.startsWith(prefix));
   if (!pool.length) return null;
   if (prefix === 'ja') {
-    return pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name) && /Online|Natural/i.test(v.name)) // Windows 在线女声
-      || pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name))                                      // Windows 离线女声
-      || pool.find(v => /O-ren/i.test(v.name))                                                    // iOS 增强女声
-      || pool.find(v => /Kyoko/i.test(v.name))                                                    // iOS 标准女声
-      || pool.find(v => /Google/i.test(v.name))                                                   // Android Google 语音
+    return pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name) && /Online|Natural/i.test(v.name))
+      || pool.find(v => /Nanami|Haruka|Ayumi/i.test(v.name))
+      || pool.find(v => /O-ren/i.test(v.name))
+      || pool.find(v => /Kyoko/i.test(v.name))
+      || pool.find(v => /Google/i.test(v.name))
       || pool.find(v => /Online|Natural/i.test(v.name))
       || pool[0];
   }
   if (prefix === 'en') {
-    return pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name) && /Online|Natural/i.test(v.name)) // Windows 在线女声
-      || pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name))                                     // Windows 离线女声
-      || pool.find(v => /Samantha|Nicky/i.test(v.name))                                              // iOS 女声
-      || pool.find(v => /Google.*Female|Female.*Google/i.test(v.name))                               // Android 女声
-      || pool.find(v => /Google/i.test(v.name) && /en-US|en-GB/i.test(v.lang))                      // Android 英语
+    return pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name) && /Online|Natural/i.test(v.name))
+      || pool.find(v => /Aria|Jenny|Zira|Natasha/i.test(v.name))
+      || pool.find(v => /Samantha|Nicky/i.test(v.name))
+      || pool.find(v => /Google.*Female|Female.*Google/i.test(v.name))
+      || pool.find(v => /Google/i.test(v.name) && /en-US|en-GB/i.test(v.lang))
       || pool.find(v => /Online|Natural/i.test(v.name))
       || pool[0];
   }
@@ -1062,41 +1251,79 @@ document.getElementById('batchSelectAll').addEventListener('click', () => {
 
 document.getElementById('batchDeleteBtn').addEventListener('click', () => {
   if (!batchSel.size) return;
-  if (!confirm('确定删除选中的 ' + batchSel.size + ' 张卡片？')) return;
-  batchSel.forEach(cid => {
-    const idx = st.userCards.findIndex(c => c.id === cid);
-    if (idx !== -1) st.userCards.splice(idx, 1);
-    else if (!st.deleted.includes(cid)) st.deleted.push(cid);
-  });
-  save();
+  deleteCards([...batchSel]);
   exitBatch();
-  renderAll();
 });
 
 document.getElementById('batchCancelBtn').addEventListener('click', exitBatch);
 
-// ── Bulk add ──────────────────────────────────────────────────────────────────
+// ── Bulk add (easy format) ────────────────────────────────────────────────────
+const FIELD_MAP = {
+  '日语': 'ja', '中文': 'cn', '框架': 'frame',
+  '假名': 'furigana', '英文': 'en', '单词': 'vocab',
+  '句型': 'pattern', '场景': 'scenes'
+};
+
+function parseEasyFormat(raw) {
+  const blocks = raw.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  const cards = [];
+  blocks.forEach(block => {
+    const obj = {};
+    block.split('\n').forEach(line => {
+      const m = line.match(/^([^:：]+)[：:]\s*(.*)/);
+      if (!m) return;
+      const key = FIELD_MAP[m[1].trim()];
+      if (!key) return;
+      obj[key] = m[2].trim();
+    });
+    if (!obj.ja) return;
+    const vocab = obj.vocab ? obj.vocab.split(',').map(s => {
+      const [j='',k='',c=''] = s.trim().split('/');
+      return { j: j.trim(), k: k.trim(), c: c.trim() };
+    }).filter(v => v.j) : [];
+    const scenes = obj.scenes ? obj.scenes.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
+    cards.push({
+      frame: obj.frame || '', cn: obj.cn || '', ja: obj.ja,
+      furigana: obj.furigana || '', en: obj.en || '',
+      vocab, pattern: obj.pattern || '', scenes
+    });
+  });
+  return cards;
+}
+
 document.getElementById('bulkAddBtn').addEventListener('click', () => {
   const raw = document.getElementById('f-bulk').value.trim();
   if (!raw) return;
-  let cards;
-  try {
-    const parsed = JSON.parse(raw);
-    cards = Array.isArray(parsed) ? parsed : parsed.userCards;
-    if (!Array.isArray(cards)) throw new Error();
-  } catch {
-    alert('JSON 格式错误，请检查后重试'); return;
+
+  let parsed;
+  // Try JSON first (backward compat), then easy format
+  if (raw.startsWith('[') || raw.startsWith('{')) {
+    try {
+      const j = JSON.parse(raw);
+      parsed = Array.isArray(j) ? j : j.userCards;
+      if (!Array.isArray(parsed)) throw new Error();
+    } catch {
+      alert('JSON 格式错误，请检查后重试'); return;
+    }
+    // Normalize JSON cards to have furigana field
+    parsed = parsed.map(c => ({ ...c, furigana: c.furigana || '' }));
+  } else {
+    parsed = parseEasyFormat(raw);
+    if (!parsed.length) { alert('未能识别任何卡片，请检查格式'); return; }
   }
+
   const existingIds = new Set(st.userCards.map(c => c.id));
+  const existingJa  = new Set(st.userCards.map(c => c.ja));
   const now = Date.now();
-  const fresh = cards
-    .filter(c => c && c.ja && !existingIds.has(c.id))
+  const fresh = parsed
+    .filter(c => c && c.ja && !existingIds.has(c.id) && !existingJa.has(c.ja))
     .map((c, i) => ({
       id: 'u' + (now + i),
       frame: c.frame || '', cn: c.cn || '', ja: c.ja,
-      en: c.en || '', vocab: c.vocab || [],
-      pattern: c.pattern || '', scenes: c.scenes || []
+      furigana: c.furigana || '', en: c.en || '',
+      vocab: c.vocab || [], pattern: c.pattern || '', scenes: c.scenes || []
     }));
+
   if (!fresh.length) { alert('没有新卡片可添加（可能已全部存在）'); return; }
   st.userCards.push(...fresh);
   save(); renderAll();
@@ -1151,6 +1378,172 @@ document.getElementById('importFile').addEventListener('change', e => {
     }
   };
   reader.readAsText(file);
+});
+
+// ── Recording (IndexedDB) ─────────────────────────────────────────────────────
+const MAX_RECS = 4;
+let _recDB = null;
+let _recCid = null;
+let _mediaRecorder = null;
+let _recChunks = [];
+let _recAudio = null;
+
+function openRecDB() {
+  if (_recDB) return Promise.resolve(_recDB);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('jpRec', 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('recordings')) {
+        const store = db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+        store.createIndex('cid', 'cid', { unique: false });
+      }
+    };
+    req.onsuccess = e => { _recDB = e.target.result; resolve(_recDB); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbGetRecs(cid) {
+  return openRecDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction('recordings', 'readonly');
+    const idx = tx.objectStore('recordings').index('cid');
+    const req = idx.getAll(cid);
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+function dbAddRec(cid, blob) {
+  return openRecDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction('recordings', 'readwrite');
+    const store = tx.objectStore('recordings');
+    const ts = Date.now();
+    const req = store.add({ cid, blob, ts });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+function dbDeleteRec(id) {
+  return openRecDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction('recordings', 'readwrite');
+    const req = tx.objectStore('recordings').delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+function dbTrimRecs(cid) {
+  // Keep only latest MAX_RECS; delete oldest if over limit
+  return dbGetRecs(cid).then(recs => {
+    if (recs.length <= MAX_RECS) return;
+    const sorted = recs.sort((a, b) => a.ts - b.ts);
+    const toDelete = sorted.slice(0, recs.length - MAX_RECS);
+    return Promise.all(toDelete.map(r => dbDeleteRec(r.id)));
+  });
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return (d.getMonth()+1) + '/' + d.getDate() + ' ' +
+    String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function renderRecList(recs) {
+  const list = document.getElementById('rec-list');
+  if (!recs.length) {
+    list.innerHTML = '<div class="rec-empty">还没有录音，点击下方按钮开始。</div>';
+    return;
+  }
+  const sorted = [...recs].sort((a, b) => b.ts - a.ts);
+  list.innerHTML = sorted.map((r, i) => `
+    <div class="rec-item" data-rid="${r.id}">
+      <span class="rec-item-label">录音 ${sorted.length - i} &nbsp;·&nbsp; ${fmtTime(r.ts)}</span>
+      <button class="rec-play-btn" data-rid="${r.id}">▶ 播放</button>
+      <button class="rec-del-btn" data-rid="${r.id}">删除</button>
+    </div>
+  `).join('');
+}
+
+function openRecDrawer(cid) {
+  _recCid = cid;
+  const card = all().find(c => c.id === cid);
+  document.getElementById('r-card-label').textContent = card ? (card.cn || card.ja || '') : '';
+  document.getElementById('r-overlay').classList.add('open');
+  document.getElementById('r-drawer').classList.add('open');
+  document.getElementById('recBtn').textContent = '🎙 开始录音';
+  document.getElementById('recBtn').classList.remove('recording');
+  document.getElementById('rec-list').innerHTML = '<div class="rec-empty">加载中…</div>';
+  dbGetRecs(cid).then(recs => renderRecList(recs));
+}
+
+function closeRecDrawer() {
+  if (_mediaRecorder && _mediaRecorder.state !== 'inactive') {
+    _mediaRecorder.stop();
+  }
+  if (_recAudio) { _recAudio.pause(); _recAudio = null; }
+  document.getElementById('r-overlay').classList.remove('open');
+  document.getElementById('r-drawer').classList.remove('open');
+  _recCid = null;
+}
+
+document.getElementById('r-overlay').addEventListener('click', closeRecDrawer);
+
+document.getElementById('rec-list').addEventListener('click', e => {
+  const playBtn = e.target.closest('.rec-play-btn');
+  if (playBtn) {
+    const rid = Number(playBtn.dataset.rid);
+    // Stop any playing audio
+    if (_recAudio) { _recAudio.pause(); _recAudio = null; }
+    document.querySelectorAll('.rec-play-btn').forEach(b => { b.textContent = '▶ 播放'; b.classList.remove('playing'); });
+    dbGetRecs(_recCid).then(recs => {
+      const rec = recs.find(r => r.id === rid);
+      if (!rec) return;
+      const url = URL.createObjectURL(rec.blob);
+      _recAudio = new Audio(url);
+      playBtn.textContent = '⏹ 停止'; playBtn.classList.add('playing');
+      _recAudio.onended = _recAudio.onerror = () => {
+        URL.revokeObjectURL(url); _recAudio = null;
+        playBtn.textContent = '▶ 播放'; playBtn.classList.remove('playing');
+      };
+      _recAudio.play();
+    });
+    return;
+  }
+  const delBtn = e.target.closest('.rec-del-btn');
+  if (delBtn) {
+    const rid = Number(delBtn.dataset.rid);
+    dbDeleteRec(rid).then(() => dbGetRecs(_recCid)).then(recs => renderRecList(recs));
+  }
+});
+
+document.getElementById('recBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('recBtn');
+  if (_mediaRecorder && _mediaRecorder.state === 'recording') {
+    _mediaRecorder.stop();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _recChunks = [];
+    _mediaRecorder = new MediaRecorder(stream);
+    _mediaRecorder.ondataavailable = e => { if (e.data.size) _recChunks.push(e.data); };
+    _mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      btn.textContent = '🎙 开始录音'; btn.classList.remove('recording');
+      if (!_recChunks.length) return;
+      const blob = new Blob(_recChunks, { type: 'audio/webm' });
+      await dbAddRec(_recCid, blob);
+      await dbTrimRecs(_recCid);
+      const recs = await dbGetRecs(_recCid);
+      renderRecList(recs);
+    };
+    _mediaRecorder.start();
+    btn.textContent = '⏹ 停止录音'; btn.classList.add('recording');
+  } catch(err) {
+    alert('无法访问麦克风：' + err.message);
+  }
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
