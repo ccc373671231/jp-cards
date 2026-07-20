@@ -341,20 +341,23 @@ body.batch-mode { padding-bottom: 88px; }
 .rec-preview .c-en { margin-bottom: 0; }
 .rec-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
 .rec-item {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; gap: 8px;
   background: var(--bg2); border: 1px solid var(--bd);
   border-radius: 10px; padding: 10px 12px;
 }
+.rec-item-head { display:flex; align-items:center; gap:10px; }
 .rec-item-label { flex: 1; font-size: 13px; color: var(--mute); }
-.rec-play-btn, .rec-del-btn {
+.rec-audio {
+  width: 100%; height: 38px;
+  accent-color: var(--acc);
+}
+.rec-del-btn {
   background: none; border: 1.5px solid var(--bd);
   border-radius: 8px; padding: 5px 11px;
   font-size: 13px; cursor: pointer; font-family: inherit; color: var(--mute);
-  transition: all .15s;
+  transition: all .15s; align-self: flex-end;
 }
-.rec-play-btn:hover { border-color: var(--acc); color: var(--acc); }
 .rec-del-btn:hover { border-color: var(--red); color: var(--red); background: var(--red2); }
-.rec-play-btn.playing { border-color: var(--grn); color: var(--grn); }
 #recBtn {
   width: 100%; margin-top: 16px; padding: 14px;
   border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
@@ -711,22 +714,31 @@ function vKey(cid, vj) { return cid + '|' + vj; }
 
 // ── Render helpers ────────────────────────────────────────────────────────────
 const CATEGORY_META = {
-  'さえすれば': { label: '只要…就…', ja: 'さえすれば' },
+  '只要…就…': { label: '只要…就…', ja: 'さえすれば' },
   '自我介绍': { label: '自我介绍', ja: '自己紹介' },
-  '日常観点': { label: '日常观点', ja: '日常観点' },
-  '日常対話': { label: '日常对话', ja: '日常対話' },
+  '日常观点': { label: '日常观点', ja: '日常観点' },
+  '日常对话': { label: '日常对话', ja: '日常対話' },
   '股票': { label: '股票', ja: '株式・投資' },
   '学习·就业': { label: '学习·就业', ja: '学習・就職' },
 };
 
 const CATEGORY_ALIASES = {
-  '只要…就…': 'さえすれば',
-  '只要...就...': 'さえすれば',
+  'さえすれば': '只要…就…',
+  '只要...就...': '只要…就…',
+  '只要…就…': '只要…就…',
+  '自己紹介': '自我介绍',
   '自己介绍': '自我介绍',
-  '日常观点': '日常観点',
-  '日常对话': '日常対話',
+  '自我介绍': '自我介绍',
+  '日常観点': '日常观点',
+  '日常观点': '日常观点',
+  '日常対話': '日常对话',
+  '日常对话': '日常对话',
+  '株式・投資': '股票',
+  '股票': '股票',
+  '学習・就職': '学习·就业',
   '学习就业': '学习·就业',
-  '学习/就业': '学习·就业'
+  '学习/就业': '学习·就业',
+  '学习·就业': '学习·就业'
 };
 
 function normalizeCategoryName(name) {
@@ -804,7 +816,6 @@ function sectionHtml(name, cards, showTags) {
   return `<div class="section">
     <div class="sec-head">
       <span class="sec-name">${meta.label}</span>
-      ${meta.ja ? `<span class="sec-ja">${meta.ja}</span>` : ''}
       <span class="sec-badge">${cards.length} 张</span>
     </div>
     ${cards.map(c => cardHtml(c, showTags)).join('')}
@@ -1548,16 +1559,42 @@ function renderRecList(recs) {
     return;
   }
   const sorted = [...recs].sort((a, b) => b.ts - a.ts);
-  list.innerHTML = sorted.map((r, i) => {
+  list.innerHTML = '';
+  sorted.forEach((r, i) => {
     const playable = canPlayBlobType(r.mimeType || r.blob?.type || '');
-    return `
-    <div class="rec-item" data-rid="${r.id}">
-      <span class="rec-item-label">录音 ${sorted.length - i} &nbsp;·&nbsp; ${fmtTime(r.ts)}${playable ? '' : ' · 当前设备可能不支持'}</span>
-      <button class="rec-play-btn" data-rid="${r.id}"${playable ? '' : ' disabled style="opacity:.45;cursor:not-allowed"'}>▶ 播放</button>
-      <button class="rec-del-btn" data-rid="${r.id}">删除</button>
-    </div>
-  `;
-  }).join('');
+    const item = document.createElement('div');
+    item.className = 'rec-item';
+    item.dataset.rid = r.id;
+
+    const head = document.createElement('div');
+    head.className = 'rec-item-head';
+
+    const label = document.createElement('span');
+    label.className = 'rec-item-label';
+    label.textContent = `录音 ${sorted.length - i} · ${fmtTime(r.ts)}${playable ? '' : ' · 当前设备可能不支持'}`;
+    head.appendChild(label);
+    item.appendChild(head);
+
+    if (playable) {
+      const url = URL.createObjectURL(r.blob);
+      const audioEl = document.createElement('audio');
+      audioEl.className = 'rec-audio';
+      audioEl.controls = true;
+      audioEl.preload = 'metadata';
+      audioEl.playsInline = true;
+      audioEl.src = url;
+      audioEl.onended = audioEl.onerror = () => URL.revokeObjectURL(url);
+      item.appendChild(audioEl);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'rec-del-btn';
+    delBtn.dataset.rid = r.id;
+    delBtn.textContent = '删除';
+    item.appendChild(delBtn);
+
+    list.appendChild(item);
+  });
 }
 
 function openRecDrawer(cid) {
@@ -1581,7 +1618,12 @@ function closeRecDrawer() {
   if (_mediaRecorder && _mediaRecorder.state !== 'inactive') {
     _mediaRecorder.stop();
   }
-  if (_recAudio) { _recAudio.pause(); _recAudio = null; }
+  document.querySelectorAll('#rec-list audio').forEach(audio => {
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+  });
+  _recAudio = null;
   document.getElementById('r-overlay').classList.remove('open');
   document.getElementById('r-drawer').classList.remove('open');
   _recCid = null;
@@ -1590,26 +1632,6 @@ function closeRecDrawer() {
 document.getElementById('r-overlay').addEventListener('click', closeRecDrawer);
 
 document.getElementById('rec-list').addEventListener('click', e => {
-  const playBtn = e.target.closest('.rec-play-btn');
-  if (playBtn) {
-    const rid = Number(playBtn.dataset.rid);
-    // Stop any playing audio
-    if (_recAudio) { _recAudio.pause(); _recAudio = null; }
-    document.querySelectorAll('.rec-play-btn').forEach(b => { b.textContent = '▶ 播放'; b.classList.remove('playing'); });
-    dbGetRecs(_recCid).then(recs => {
-      const rec = recs.find(r => r.id === rid);
-      if (!rec) return;
-      const url = URL.createObjectURL(rec.blob);
-      _recAudio = new Audio(url);
-      playBtn.textContent = '⏹ 停止'; playBtn.classList.add('playing');
-      _recAudio.onended = _recAudio.onerror = () => {
-        URL.revokeObjectURL(url); _recAudio = null;
-        playBtn.textContent = '▶ 播放'; playBtn.classList.remove('playing');
-      };
-      _recAudio.play();
-    });
-    return;
-  }
   const delBtn = e.target.closest('.rec-del-btn');
   if (delBtn) {
     const rid = Number(delBtn.dataset.rid);
