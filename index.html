@@ -750,15 +750,30 @@ function cardHtml(c, showTags) {
 
 function sectionHtml(name, cards, showTags) {
   const meta = categoryMeta(name);
-  const collapsed = st.collapsed?.[name] ? ' collapsed' : '';
-  return `<div class="section${collapsed}" data-sec="${name}">
+  const isCollapsed = !!st.collapsed?.[name];
+  const collapsed = isCollapsed ? ' collapsed' : '';
+  const deferred = isCollapsed ? ` data-deferred="1" data-show-tags="${showTags}"` : '';
+  const cardsHtml = isCollapsed ? '' : cards.map(c => cardHtml(c, showTags)).join('');
+  return `<div class="section${collapsed}" data-sec="${name}"${deferred}>
     <div class="sec-head">
       <span class="sec-toggle">▾</span>
       <span class="sec-name">${meta.label}</span>
       <span class="sec-badge">${cards.length} 张</span>
     </div>
-    ${cards.map(c => cardHtml(c, showTags)).join('')}
+    ${cardsHtml}
   </div>`;
+}
+
+function getCardsForSection(secName, tabKey) {
+  return all().filter(c => {
+    if (tabKey === 'pattern') {
+      return (normalizeCategoryName(c.pattern) || '未分类') === secName;
+    }
+    const scenes = c.scenes?.length
+      ? c.scenes.map(s => normalizeCategoryName(s) || '未分类')
+      : ['未分类'];
+    return scenes.includes(secName);
+  });
 }
 
 function orderedKeys(tabKey, raw) {
@@ -875,8 +890,16 @@ document.body.addEventListener('click', e => {
     if (_suppressSecClick) { _suppressSecClick = false; return; }
     const section = secHead.closest('.section');
     section.classList.toggle('collapsed');
-    st.collapsed[section.dataset.sec] = section.classList.contains('collapsed');
+    const nowCollapsed = section.classList.contains('collapsed');
+    st.collapsed[section.dataset.sec] = nowCollapsed;
     save();
+    if (!nowCollapsed && section.dataset.deferred === '1') {
+      const tabKey = document.querySelector('.tab-btn.active')?.dataset.tab;
+      const showTags = section.dataset.showTags === 'true';
+      const cards = getCardsForSection(section.dataset.sec, tabKey);
+      section.insertAdjacentHTML('beforeend', cards.map(c => cardHtml(c, showTags)).join(''));
+      delete section.dataset.deferred;
+    }
     return;
   }
 
