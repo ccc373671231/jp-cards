@@ -106,7 +106,11 @@ input[type=checkbox] { accent-color: var(--acc); }
   margin-bottom: 12px; padding-bottom: 10px;
   border-bottom: 1px solid var(--bd);
   cursor: pointer; user-select: none;
+  touch-action: none;
 }
+.sec-head.drag-ready { cursor: grab; }
+.sec-head.dragging { cursor: grabbing; opacity: .7; }
+.section.drag-over { outline: 2px dashed var(--acc); outline-offset: 4px; }
 .sec-name { font-size: 15px; font-weight: 700; }
 .sec-ja { font-size: 12px; color: var(--mute); }
 .sec-badge {
@@ -635,6 +639,7 @@ st.mastered      = st.mastered      || [];
 st.userCards     = st.userCards     || [];
 st.deleted       = st.deleted       || [];
 st.collapsed     = st.collapsed     || {};
+st.sectionOrder  = st.sectionOrder  || { pattern: [], scene: [] };
 st.hide          = !!st.hide;
 st.showFurigana  = !!st.showFurigana;
 st.theme         = st.theme         || 'light';
@@ -756,14 +761,20 @@ function sectionHtml(name, cards, showTags) {
   </div>`;
 }
 
+function orderedKeys(tabKey, raw) {
+  const saved = st.sectionOrder[tabKey] || [];
+  return [...saved.filter(k => raw.includes(k)), ...raw.filter(k => !saved.includes(k))];
+}
+
 function renderPattern() {
   const byP = {};
   all().forEach(c => {
     const p = normalizeCategoryName(c.pattern) || '未分类';
     (byP[p] = byP[p] || []).push(c);
   });
+  const keys = orderedKeys('pattern', Object.keys(byP));
   document.getElementById('tab-pattern').innerHTML =
-    Object.entries(byP).map(([p,cs]) => sectionHtml(p, cs, false)).join('');
+    keys.map(p => sectionHtml(p, byP[p], false)).join('');
 }
 
 function renderScene() {
@@ -774,10 +785,13 @@ function renderScene() {
       (byS[key] = byS[key] || []).push(c);
     });
   });
+  if (!Object.keys(byS).length) {
+    document.getElementById('tab-scene').innerHTML = '<div class="empty">暂无内容</div>';
+    return;
+  }
+  const keys = orderedKeys('scene', Object.keys(byS));
   document.getElementById('tab-scene').innerHTML =
-    Object.keys(byS).length
-      ? Object.entries(byS).map(([s,cs]) => sectionHtml(s, cs, true)).join('')
-      : '<div class="empty">暂无内容</div>';
+    keys.map(s => sectionHtml(s, byS[s], true)).join('');
 }
 
 function refreshForm() {
@@ -855,9 +869,10 @@ document.body.addEventListener('click', e => {
     return;
   }
 
-  // Toggle section collapse
+  // Toggle section collapse (skip if a drag just ended)
   const secHead = e.target.closest('.sec-head');
   if (secHead) {
+    if (_suppressSecClick) { _suppressSecClick = false; return; }
     const section = secHead.closest('.section');
     section.classList.toggle('collapsed');
     st.collapsed[section.dataset.sec] = section.classList.contains('collapsed');
@@ -1613,6 +1628,99 @@ document.getElementById('recBtn').addEventListener('click', async () => {
     alert('无法访问麦克风：' + err.message);
   }
 });
+
+// ── Section drag-to-reorder ───────────────────────────────────────────────────
+let _suppressSecClick = false;
+
+(function initSectionDrag() {
+  [['tab-pattern','pattern'],['tab-scene','scene']].forEach(([id, tabKey]) => {
+    const container = document.getElementById(id);
+    let timer = null, clone = null, src = null, startY = 0, active = false;
+
+    container.addEventListener('touchstart', e => {
+      const head = e.target.closest('.sec-head');
+      if (!head) return;
+      startY = e.touches[0].clientY;
+      active = false;
+      timer = setTimeout(() => {
+        timer = null;
+        active = true;
+        _suppressSecClick = true;
+        src = head.closest('.section');
+        src.classList.add('drag-src');
+        head.classList.add('dragging');
+        if (navigator.vibrate) navigator.vibrate(30);
+        const r = src.getBoundingClientRect();
+        clone = document.createElement('div');
+        clone.style.cssText = `position:fixed;left:${r.left}px;width:${r.width}px;top:${r.top-4}px;z-index:9999;pointer-events:none;background:var(--card);border:2px solid var(--acc);border-radius:var(--r);padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:8px;opacity:.9;`;
+        clone.innerHTML = head.innerHTML;
+        document.body.appendChild(clone);
+      }, 480);
+    }, { passive: true });
+
+    container.addEventListener('touchmove', e => {
+      if (timer && Math.abs(e.touches[0].clientY - startY) > 8) {
+        clearTimeout(timer); timer = null;
+      }
+      if (!active) return;
+      e.preventDefault();
+      const y = e.touches[0].clientY;
+      clone.style.top = (y - 22) + 'px';
+      const sections = [...container.querySelectorAll('.section')];
+      sections.forEach(s => s.classList.remove('drag-over'));
+      let placed = false;
+      for (const s of sections) {
+        if (s === src) continue;
+        const r = s.getBoundingClientRect();
+        if (y < r.top + r.height / 2) { s.classList.add('drag-over'); placed = true; break; }
+      }
+      if (!placed) {
+        const others = sections.filter(s => s !== src);
+        if (others.length) others.at(-1).classList.add('drag-over');
+      }
+    }, { passive: false });
+
+    const finish = () => {
+      if (timer) { clearTimeout(timer); timer = null; return; }
+      if (!active) return;
+      active = false;
+      const sections = [...container.querySelectorAll('.section')];
+      const order = sections.map(s => s.dataset.sec);
+      const over = container.querySelector('.drag-over');
+      const fromIdx = order.indexOf(src.dataset.sec);
+      let rawTo = over ? order.indexOf(over.dataset.sec) : order.length - 1;
+      const toIdx = rawTo > fromIdx ? rawTo - 1 : rawTo;
+      sections.forEach(s => s.classList.remove('drag-over'));
+      clone.remove(); clone = null;
+      src.classList.remove('drag-src');
+      src.querySelector('.sec-head')?.classList.remove('dragging');
+      src = null;
+      if (toIdx !== fromIdx) {
+        const newOrder = [...order];
+        const [item] = newOrder.splice(fromIdx, 1);
+        newOrder.splice(toIdx, 0, item);
+        st.sectionOrder[tabKey] = newOrder;
+        save();
+        renderAll();
+      }
+    };
+
+    const cancel = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (clone) { clone.remove(); clone = null; }
+      if (src) {
+        src.classList.remove('drag-src');
+        src.querySelector('.sec-head')?.classList.remove('dragging');
+        src = null;
+      }
+      container.querySelectorAll('.section').forEach(s => s.classList.remove('drag-over'));
+      active = false;
+    };
+
+    container.addEventListener('touchend', finish, { passive: false });
+    container.addEventListener('touchcancel', cancel);
+  });
+})();
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderAll();
