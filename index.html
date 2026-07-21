@@ -1539,6 +1539,7 @@ function renderRecList(recs) {
       const audioEl = document.createElement('audio');
       audioEl.className = 'rec-audio';
       audioEl.controls = true;
+      audioEl.controlsList = 'nodownload';
       audioEl.preload = 'metadata';
       audioEl.playsInline = true;
       audioEl.src = url;
@@ -1633,92 +1634,146 @@ document.getElementById('recBtn').addEventListener('click', async () => {
 let _suppressSecClick = false;
 
 (function initSectionDrag() {
+  // Shared drag helpers
+  function makeClone(head) {
+    const r = head.closest('.section').getBoundingClientRect();
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;left:${r.left}px;width:${r.width}px;top:${r.top-4}px;z-index:9999;pointer-events:none;background:var(--card);border:2px solid var(--acc);border-radius:var(--r);padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:8px;opacity:.9;`;
+    el.innerHTML = head.innerHTML;
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function updateOver(container, src, y) {
+    const sections = [...container.querySelectorAll('.section')];
+    sections.forEach(s => s.classList.remove('drag-over'));
+    let placed = false;
+    for (const s of sections) {
+      if (s === src) continue;
+      const r = s.getBoundingClientRect();
+      if (y < r.top + r.height / 2) { s.classList.add('drag-over'); placed = true; break; }
+    }
+    if (!placed) {
+      const others = sections.filter(s => s !== src);
+      if (others.length) others.at(-1).classList.add('drag-over');
+    }
+  }
+
+  function commitOrder(container, tabKey, src) {
+    const sections = [...container.querySelectorAll('.section')];
+    const order = sections.map(s => s.dataset.sec);
+    const over = container.querySelector('.drag-over');
+    const fromIdx = order.indexOf(src.dataset.sec);
+    let rawTo = over ? order.indexOf(over.dataset.sec) : order.length - 1;
+    const toIdx = rawTo > fromIdx ? rawTo - 1 : rawTo;
+    sections.forEach(s => s.classList.remove('drag-over'));
+    if (toIdx !== fromIdx) {
+      const newOrder = [...order];
+      const [item] = newOrder.splice(fromIdx, 1);
+      newOrder.splice(toIdx, 0, item);
+      st.sectionOrder[tabKey] = newOrder;
+      save();
+      renderAll();
+    }
+  }
+
+  function cleanup(container, src, clone) {
+    if (clone) clone.remove();
+    if (src) {
+      src.classList.remove('drag-src');
+      src.querySelector('.sec-head')?.classList.remove('dragging');
+    }
+    container.querySelectorAll('.section').forEach(s => s.classList.remove('drag-over'));
+  }
+
   [['tab-pattern','pattern'],['tab-scene','scene']].forEach(([id, tabKey]) => {
     const container = document.getElementById(id);
-    let timer = null, clone = null, src = null, startY = 0, active = false;
+
+    // ── Touch (long-press to start) ──────────────────────────────────────────
+    let tTimer = null, tClone = null, tSrc = null, tStartY = 0, tActive = false;
 
     container.addEventListener('touchstart', e => {
       const head = e.target.closest('.sec-head');
       if (!head) return;
-      startY = e.touches[0].clientY;
-      active = false;
-      timer = setTimeout(() => {
-        timer = null;
-        active = true;
+      tStartY = e.touches[0].clientY;
+      tActive = false;
+      tTimer = setTimeout(() => {
+        tTimer = null; tActive = true;
         _suppressSecClick = true;
-        src = head.closest('.section');
-        src.classList.add('drag-src');
+        tSrc = head.closest('.section');
+        tSrc.classList.add('drag-src');
         head.classList.add('dragging');
         if (navigator.vibrate) navigator.vibrate(30);
-        const r = src.getBoundingClientRect();
-        clone = document.createElement('div');
-        clone.style.cssText = `position:fixed;left:${r.left}px;width:${r.width}px;top:${r.top-4}px;z-index:9999;pointer-events:none;background:var(--card);border:2px solid var(--acc);border-radius:var(--r);padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:8px;opacity:.9;`;
-        clone.innerHTML = head.innerHTML;
-        document.body.appendChild(clone);
+        tClone = makeClone(head);
       }, 480);
     }, { passive: true });
 
     container.addEventListener('touchmove', e => {
-      if (timer && Math.abs(e.touches[0].clientY - startY) > 8) {
-        clearTimeout(timer); timer = null;
+      if (tTimer && Math.abs(e.touches[0].clientY - tStartY) > 8) {
+        clearTimeout(tTimer); tTimer = null;
       }
-      if (!active) return;
+      if (!tActive) return;
       e.preventDefault();
       const y = e.touches[0].clientY;
-      clone.style.top = (y - 22) + 'px';
-      const sections = [...container.querySelectorAll('.section')];
-      sections.forEach(s => s.classList.remove('drag-over'));
-      let placed = false;
-      for (const s of sections) {
-        if (s === src) continue;
-        const r = s.getBoundingClientRect();
-        if (y < r.top + r.height / 2) { s.classList.add('drag-over'); placed = true; break; }
-      }
-      if (!placed) {
-        const others = sections.filter(s => s !== src);
-        if (others.length) others.at(-1).classList.add('drag-over');
-      }
+      tClone.style.top = (y - 22) + 'px';
+      updateOver(container, tSrc, y);
     }, { passive: false });
 
-    const finish = () => {
-      if (timer) { clearTimeout(timer); timer = null; return; }
-      if (!active) return;
-      active = false;
-      const sections = [...container.querySelectorAll('.section')];
-      const order = sections.map(s => s.dataset.sec);
-      const over = container.querySelector('.drag-over');
-      const fromIdx = order.indexOf(src.dataset.sec);
-      let rawTo = over ? order.indexOf(over.dataset.sec) : order.length - 1;
-      const toIdx = rawTo > fromIdx ? rawTo - 1 : rawTo;
-      sections.forEach(s => s.classList.remove('drag-over'));
-      clone.remove(); clone = null;
-      src.classList.remove('drag-src');
-      src.querySelector('.sec-head')?.classList.remove('dragging');
-      src = null;
-      if (toIdx !== fromIdx) {
-        const newOrder = [...order];
-        const [item] = newOrder.splice(fromIdx, 1);
-        newOrder.splice(toIdx, 0, item);
-        st.sectionOrder[tabKey] = newOrder;
-        save();
-        renderAll();
-      }
+    const tFinish = () => {
+      if (tTimer) { clearTimeout(tTimer); tTimer = null; return; }
+      if (!tActive) return;
+      tActive = false;
+      commitOrder(container, tabKey, tSrc);
+      cleanup(container, tSrc, tClone);
+      tSrc = null; tClone = null;
     };
 
-    const cancel = () => {
-      if (timer) { clearTimeout(timer); timer = null; }
-      if (clone) { clone.remove(); clone = null; }
-      if (src) {
-        src.classList.remove('drag-src');
-        src.querySelector('.sec-head')?.classList.remove('dragging');
-        src = null;
-      }
-      container.querySelectorAll('.section').forEach(s => s.classList.remove('drag-over'));
-      active = false;
-    };
+    container.addEventListener('touchend', tFinish, { passive: false });
+    container.addEventListener('touchcancel', () => {
+      if (tTimer) { clearTimeout(tTimer); tTimer = null; }
+      cleanup(container, tSrc, tClone);
+      tSrc = null; tClone = null; tActive = false;
+    });
 
-    container.addEventListener('touchend', finish, { passive: false });
-    container.addEventListener('touchcancel', cancel);
+    // ── Mouse (drag immediately after threshold) ─────────────────────────────
+    let mDown = false, mActive = false, mClone = null, mSrc = null;
+    let mStartX = 0, mStartY = 0;
+
+    container.addEventListener('mousedown', e => {
+      const head = e.target.closest('.sec-head');
+      if (!head) return;
+      e.preventDefault();
+      mDown = true; mActive = false;
+      mStartX = e.clientX; mStartY = e.clientY;
+      mSrc = head.closest('.section');
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!mDown) return;
+      const dx = e.clientX - mStartX, dy = e.clientY - mStartY;
+      if (!mActive && Math.hypot(dx, dy) > 8) {
+        mActive = true;
+        _suppressSecClick = true;
+        mSrc.classList.add('drag-src');
+        mSrc.querySelector('.sec-head').classList.add('dragging');
+        document.body.style.userSelect = 'none';
+        mClone = makeClone(mSrc.querySelector('.sec-head'));
+      }
+      if (!mActive) return;
+      mClone.style.top = (e.clientY - 22) + 'px';
+      updateOver(container, mSrc, e.clientY);
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!mDown) return;
+      mDown = false;
+      document.body.style.userSelect = '';
+      if (!mActive) { mSrc = null; return; }
+      mActive = false;
+      commitOrder(container, tabKey, mSrc);
+      cleanup(container, mSrc, mClone);
+      mSrc = null; mClone = null;
+    });
   });
 })();
 
