@@ -490,31 +490,8 @@ body.batch-mode { padding-bottom: 88px; }
 <div class="d-panel" id="s-drawer">
   <div class="drawer-title">🔊 语音设置</div>
   <div class="drawer-desc">
-    设置 AI 语音 API Key，日语和英语将使用 AI 语音朗读（质量大幅提升）。<br>
-    Key 仅保存在本设备浏览器中，不会上传到任何服务器。<br>
-    <span id="key-active-hint" style="font-size:12px"></span>
-  </div>
-  <div class="fg" style="margin-top:16px">
-    <label>语音提供商</label>
-    <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="tts-prov" value="browser" id="prov-browser"> 浏览器内置</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="tts-prov" value="openai" id="prov-openai"> OpenAI</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="radio" name="tts-prov" value="doubao" id="prov-doubao"> 豆包</label>
-    </div>
-  </div>
-  <div class="fg" id="fg-openai" style="margin-top:12px">
-    <label>OpenAI API Key</label>
-    <input class="fi" id="key-input" type="password" placeholder="sk-...">
-  </div>
-  <div class="fg" id="fg-doubao" style="margin-top:12px">
-    <label>豆包 API Key</label>
-    <input class="fi" id="doubao-key-input" type="password" placeholder="火山方舟控制台获取的 API Key">
-    <div style="font-size:11px;color:var(--mute);margin-top:5px;line-height:1.6">获取地址：console.volcengine.com → 火山方舟 → API Key 管理</div>
-  </div>
-  <div id="key-status" class="key-status"></div>
-  <div class="btn-row">
-    <button class="submit-btn" id="saveKeyBtn" style="margin-top:0">保存</button>
-    <button class="btn-sec" id="clearKeyBtn">清除</button>
+    使用浏览器内置语音朗读。<br>
+    <span style="color:var(--mute);font-size:12px">安卓用户建议在系统设置中安装 Google 语音服务（Google Text-to-Speech），日语朗读效果更好。</span>
   </div>
   <div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">
     <button class="btn-sec" id="listVoicesBtn" style="font-size:12px">查看本机可用语音列表</button>
@@ -656,9 +633,6 @@ st.sectionOrder  = st.sectionOrder  || { pattern: [], scene: [] };
 st.hide          = !!st.hide;
 st.showFurigana  = !!st.showFurigana;
 st.theme         = st.theme         || 'light';
-st.openaiKey     = st.openaiKey     || '';
-st.doubaoKey     = st.doubaoKey     || '';
-st.ttsProvider   = st.ttsProvider   || (st.openaiKey ? 'openai' : 'browser');
 
 function save() { localStorage.setItem('jpSt', JSON.stringify(st)); }
 function all()  { return [...BUILT, ...st.userCards].filter(c => !st.deleted.includes(c.id)); }
@@ -1150,88 +1124,9 @@ document.getElementById('saveEditBtn').addEventListener('click', () => {
 });
 
 // ── TTS ──────────────────────────────────────────────────────────────────────
-let _audio = null;
-
-async function speak(text, lang, el) {
-  if (_audio) { _audio.pause(); _audio = null; }
+function speak(text, lang, el) {
   window.speechSynthesis?.cancel();
-  if (st.ttsProvider === 'openai' && st.openaiKey) {
-    await speakOpenAI(text, lang, el);
-  } else if (st.ttsProvider === 'doubao' && st.doubaoKey) {
-    await speakDoubao(text, lang, el);
-  } else {
-    speakBrowser(text, lang, el);
-  }
-}
-
-async function speakOpenAI(text, lang, el) {
-  if (el) el.classList.add('speaking');
-  try {
-    const voice = lang.startsWith('ja') ? 'nova' : 'shimmer';
-    const res = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + st.openaiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'tts-1-hd', input: text, voice })
-    });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => res.status);
-      throw new Error(msg);
-    }
-    const url = URL.createObjectURL(await res.blob());
-    _audio = new Audio(url);
-    _audio.onended = _audio.onerror = () => {
-      if (el) el.classList.remove('speaking');
-      URL.revokeObjectURL(url); _audio = null;
-    };
-    _audio.play();
-  } catch(err) {
-    console.error('OpenAI TTS:', err);
-    if (el) el.classList.remove('speaking');
-    showTtsError(String(err));
-    speakBrowser(text, lang, el);
-  }
-}
-
-async function speakDoubao(text, lang, el) {
-  if (el) el.classList.add('speaking');
-  try {
-    const voice = lang.startsWith('ja') ? 'ja_female_bv522_uranus_bigtts' : 'zh_female_vv_uranus_bigtts';
-    const res = await fetch('https://ark.cn-beijing.volces.com/api/v3/audio/speech', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + st.doubaoKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'doubao-tts-hd-v1', input: text, voice })
-    });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => res.status);
-      throw new Error(msg);
-    }
-    const url = URL.createObjectURL(await res.blob());
-    _audio = new Audio(url);
-    _audio.onended = _audio.onerror = () => {
-      if (el) el.classList.remove('speaking');
-      URL.revokeObjectURL(url); _audio = null;
-    };
-    _audio.play();
-  } catch(err) {
-    console.error('Doubao TTS:', err);
-    if (el) el.classList.remove('speaking');
-    showTtsError(String(err));
-    speakBrowser(text, lang, el);
-  }
-}
-
-function showTtsError(msg) {
-  let tip = document.getElementById('tts-err-tip');
-  if (!tip) {
-    tip = document.createElement('div');
-    tip.id = 'tts-err-tip';
-    tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;z-index:9999;max-width:90vw;word-break:break-all;';
-    document.body.appendChild(tip);
-  }
-  tip.textContent = 'AI语音失败，已回退浏览器TTS：' + msg;
-  tip.style.display = 'block';
-  clearTimeout(tip._t);
-  tip._t = setTimeout(() => { tip.style.display = 'none'; }, 5000);
+  speakBrowser(text, lang, el);
 }
 
 function getBrowserVoice(lang) {
@@ -1283,63 +1178,17 @@ function speakBrowser(text, lang, el) {
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-function updateProviderUI(prov) {
-  document.getElementById('fg-openai').style.display = prov === 'openai' ? '' : 'none';
-  document.getElementById('fg-doubao').style.display = prov === 'doubao' ? '' : 'none';
-}
-function updateKeyHint() {
-  const hint = document.getElementById('key-active-hint');
-  if (!hint) return;
-  if (st.ttsProvider === 'openai' && st.openaiKey)
-    hint.innerHTML = '<span style="color:#27ae60">✓ 当前使用 OpenAI TTS（tts-1-hd）</span>';
-  else if (st.ttsProvider === 'doubao' && st.doubaoKey)
-    hint.innerHTML = '<span style="color:#27ae60">✓ 当前使用豆包 TTS（doubao-tts-hd-v1）</span>';
-  else
-    hint.innerHTML = '<span style="color:#888">当前使用浏览器内置语音</span>';
-}
 function openSettings() {
   document.getElementById('s-overlay').classList.add('open');
   document.getElementById('s-drawer').classList.add('open');
-  document.getElementById('key-input').value = st.openaiKey;
-  document.getElementById('doubao-key-input').value = st.doubaoKey;
-  document.getElementById('key-status').style.display = 'none';
-  const prov = st.ttsProvider || 'browser';
-  const radio = document.querySelector(`input[name="tts-prov"][value="${prov}"]`);
-  if (radio) radio.checked = true;
-  updateProviderUI(prov);
   if (sfDrawerCb) sfDrawerCb.checked = st.showFurigana;
-  updateKeyHint();
 }
 function closeSettings() {
   document.getElementById('s-overlay').classList.remove('open');
   document.getElementById('s-drawer').classList.remove('open');
 }
-document.querySelectorAll('input[name="tts-prov"]').forEach(r => {
-  r.addEventListener('change', () => updateProviderUI(r.value));
-});
 document.getElementById('settingsBtn').addEventListener('click', openSettings);
 document.getElementById('s-overlay').addEventListener('click', closeSettings);
-document.getElementById('saveKeyBtn').addEventListener('click', () => {
-  st.ttsProvider = document.querySelector('input[name="tts-prov"]:checked')?.value || 'browser';
-  st.openaiKey   = document.getElementById('key-input').value.trim();
-  st.doubaoKey   = document.getElementById('doubao-key-input').value.trim();
-  save();
-  const ks = document.getElementById('key-status');
-  ks.textContent = '✓ 已保存';
-  ks.style.display = 'block';
-  setTimeout(closeSettings, 1400);
-});
-document.getElementById('clearKeyBtn').addEventListener('click', () => {
-  st.ttsProvider = 'browser'; st.openaiKey = ''; st.doubaoKey = '';
-  document.getElementById('key-input').value = '';
-  document.getElementById('doubao-key-input').value = '';
-  const br = document.querySelector('input[name="tts-prov"][value="browser"]');
-  if (br) br.checked = true;
-  updateProviderUI('browser');
-  save();
-  document.getElementById('key-status').textContent = '已清除';
-  document.getElementById('key-status').style.display = 'block';
-});
 document.getElementById('listVoicesBtn').addEventListener('click', () => {
   const box = document.getElementById('voice-list');
   const voices = window.speechSynthesis.getVoices();
