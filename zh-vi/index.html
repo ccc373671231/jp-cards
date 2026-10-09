@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cùng học tiếng Trung · 中文短句</title>
+<style>
+[hidden] { display: none !important; }
+
+:root {
+  --bg:   #f5f1ec;
+  --bg2:  #ebe5dc;
+  --card: #ffffff;
+  --bd:   #ddd7ce;
+  --text: #28231e;
+  --mute: #8a8078;
+  --acc:  #4e7ca1;
+  --acc2: #e8f1f8;
+  --grn:  #4d8c6f;
+  --grn2: #e6f4ec;
+  --amb:  #b5722a;
+  --amb2: #fdf0e0;
+  --red:  #c0392b;
+  --red2: #fdecea;
+  --sh:   0 1px 4px rgba(0,0,0,.06), 0 3px 10px rgba(0,0,0,.05);
+  --r:    13px;
+}
+[data-theme=dark] {
+  --bg:   #181824;
+  --bg2:  #1e1e2c;
+  --card: #252538;
+  --bd:   #38385a;
+  --text: #e0dbd4;
+  --mute: #8888a8;
+  --acc:  #7aabcf;
+  --acc2: #1c2a3a;
+  --grn:  #6ab890;
+  --grn2: #192e24;
+  --amb:  #d4953e;
+  --amb2: #2e2014;
+  --red:  #e05c5c;
+  --red2: #2e1a1a;
+  --sh:   0 1px 4px rgba(0,0,0,.3), 0 3px 10px rgba(0,0,0,.25);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei',
+               'Hiragino Sans GB', sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; font-size: 15px; line-height: 1.55;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Japanese content: JP font first, no fallback to JP fonts for CN glyphs */
+.c-frame, .c-ja, .c-furigana, .vj, .vk {
+  font-family: 'Yu Gothic UI', 'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP',
+               'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
+}
+
+/* HEADER */
+header {
+  position: sticky; top: 0; z-index: 200;
+  background: var(--card); border-bottom: 1px solid var(--bd);
+  padding: 13px 18px; display: flex; align-items: center;
+  justify-content: space-between; box-shadow: var(--sh);
+}
+.h-title { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+.h-sub { font-size: 11px; color: var(--mute); margin-top: 2px; }
+#themeBtn {
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 20px; padding: 5px 14px; font-size: 14px;
+  cursor: pointer; color: var(--text); font-family: inherit;
+}
+
+/* TABS */
+.tab-nav {
+  position: sticky; top: 58px; z-index: 190;
+  background: var(--card); border-bottom: 1px solid var(--bd);
+  display: flex;
+}
+.tab-btn {
+  flex: 1; background: none; border: none;
+  border-bottom: 2.5px solid transparent;
+  padding: 12px 4px; font-size: 13.5px; font-weight: 500;
+  color: var(--mute); cursor: pointer; font-family: inherit;
+  transition: color .2s, border-color .2s;
+}
+.tab-btn.active { color: var(--acc); border-bottom-color: var(--acc); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* SETTINGS BAR */
+.settings-bar {
+  background: var(--bg2); border-bottom: 1px solid var(--bd);
+  padding: 8px 16px; display: flex; gap: 16px; align-items: center;
+  flex-wrap: wrap;
+}
+.settings-bar label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--mute); cursor: pointer;
+}
+input[type=checkbox] { accent-color: var(--acc); }
+
+/* SECTION */
+.section { padding: 16px 14px 6px; }
+.sec-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--bd);
+  cursor: pointer; user-select: none;
+  touch-action: none;
+}
+.sec-head.drag-ready { cursor: grab; }
+.sec-head.dragging { cursor: grabbing; opacity: .7; }
+.section.drag-over { outline: 2px dashed var(--acc); outline-offset: 4px; }
+.sec-name { font-size: 15px; font-weight: 700; }
+.sec-ja { font-size: 12px; color: var(--mute); }
+.sec-badge {
+  margin-left: auto; background: var(--bg2); color: var(--mute);
+  border-radius: 10px; padding: 2px 9px; font-size: 11.5px;
+}
+.sec-toggle {
+  font-size: 10px; color: var(--mute);
+  display: inline-block; transition: transform .2s;
+}
+.section.collapsed .sec-toggle { transform: rotate(-90deg); }
+.section.collapsed .card { display: none; }
+.section.collapsed .sec-head { margin-bottom: 6px; border-bottom-color: transparent; }
+
+/* CARD */
+.card {
+  background: var(--card); border: 1px solid var(--bd);
+  border-radius: var(--r); margin-bottom: 10px;
+  box-shadow: var(--sh); overflow: hidden; cursor: pointer;
+  transition: box-shadow .15s, transform .1s;
+}
+.card:active { transform: scale(.985); box-shadow: none; }
+.card-front { padding: 15px 16px; }
+.c-frame {
+  font-size: 17px; font-weight: 700; color: var(--acc);
+  line-height: 1.65; margin-bottom: 5px; overflow-wrap: break-word;
+}
+.c-cn { font-size: 13px; color: var(--mute); line-height: 1.5; }
+.c-hint {
+  margin-top: 10px; font-size: 11px; color: var(--mute);
+  display: flex; align-items: center; gap: 4px;
+}
+.c-hint svg { opacity: .45; }
+.card.open .c-hint { display: none; }
+
+/* CARD BACK */
+.card-back {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .28s ease;
+}
+.card.open .card-back { grid-template-rows: 1fr; }
+.card-back-inner { overflow: hidden; border-top: 1px solid var(--bd); }
+.card-back-content { padding: 14px 16px 15px; }
+.back-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  color: var(--mute); text-transform: uppercase; margin-bottom: 8px;
+}
+.c-ja {
+  font-size: 15.5px; font-weight: 500; line-height: 1.85;
+  color: var(--text); margin-bottom: 6px; overflow-wrap: break-word;
+  cursor: pointer; border-radius: 7px; transition: background .15s;
+}
+.c-ja:hover, .c-ja.speaking { background: var(--acc2); }
+/* FURIGANA */
+.c-furigana {
+  font-size: 12px; color: var(--mute); line-height: 1.7;
+  margin-bottom: 6px; overflow-wrap: break-word;
+  padding: 3px 6px; background: var(--bg2); border-radius: 5px;
+  display: none;
+}
+body.show-furigana .c-furigana { display: block; }
+.c-en {
+  font-size: 13px; color: var(--mute); line-height: 1.6; font-style: italic;
+  cursor: pointer; border-radius: 7px; transition: background .15s;
+}
+.c-en:hover, .c-en.speaking { background: var(--bg2); }
+.tts-hint { font-size: 10px; font-style: normal; opacity: .65; margin-left: 5px; }
+
+/* TAGS */
+.c-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+.tag { font-size: 11px; font-weight: 500; border-radius: 6px; padding: 2px 8px; }
+.tag-p { background: var(--amb2); color: var(--amb); }
+.tag-s { background: var(--grn2); color: var(--grn); }
+
+/* VOCAB */
+.vocab-blk {
+  margin-top: 13px; padding-top: 11px;
+  border-top: 1px dashed var(--bd);
+}
+.vocab-ttl {
+  font-size: 10px; font-weight: 700; letter-spacing: .8px;
+  color: var(--mute); margin-bottom: 7px;
+}
+.vocab-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.vchip {
+  background: var(--bg2); border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 5px 6px 5px 10px;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: border-color .2s, background .2s; user-select: none; line-height: 1.45;
+}
+.vchip:active { opacity: .75; }
+.vchip.mastered { border-color: var(--grn); background: var(--grn2); }
+.vchip.mastered .vj { color: var(--grn); }
+.vchip.mastered-hidden { display: none; }
+.vchip.speaking { background: var(--acc2); border-color: var(--acc); }
+.vchip-body { flex: 1; }
+.vj { font-size: 13px; font-weight: 600; display: block; color: var(--text); }
+.vk { font-size: 10px; color: var(--mute); display: block; }
+.vc { font-size: 11px; color: var(--acc); margin-left: 3px; }
+.vchip-star {
+  flex: 0 0 auto; background: none; border: 1.5px solid var(--bd);
+  border-radius: 50%; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--mute); cursor: pointer;
+  transition: all .15s; padding: 0; font-family: inherit; line-height: 1;
+}
+.vchip-star.on { background: var(--grn); border-color: var(--grn); color: #fff; }
+
+/* CARD ACTIONS */
+.card-actions {
+  display: flex; gap: 8px;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--bd);
+}
+.ca-btn {
+  flex: 1; background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 8px; padding: 8px; font-size: 13px;
+  color: var(--mute); cursor: pointer; font-family: inherit;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.ca-btn:hover { background: var(--bd); }
+.ca-del:hover { background: var(--red2); border-color: var(--red); color: var(--red); }
+.ca-rec { }
+.ca-rec.recording { background: var(--red2); border-color: var(--red); color: var(--red); animation: pulse .8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* ADD FORM */
+.add-form { padding: 20px 14px 50px; }
+.fs-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .8px;
+  color: var(--mute); text-transform: uppercase; margin: 22px 0 12px;
+}
+.fs-title:first-child { margin-top: 0; }
+.fg { margin-bottom: 14px; }
+.fg > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.fg .gh { font-size: 11px; color: var(--mute); margin-bottom: 5px; display: block; }
+.fi, .fta {
+  width: 100%; background: var(--card); border: 1.5px solid var(--bd);
+  border-radius: 9px; padding: 10px 12px;
+  font-size: 14px; font-family: inherit; color: var(--text);
+  outline: none; transition: border-color .2s; -webkit-appearance: none;
+}
+.fi:focus, .fta:focus { border-color: var(--acc); }
+.fta { min-height: 66px; resize: vertical; }
+.cbg { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 2px; }
+.cbl {
+  display: flex; align-items: center; gap: 5px; font-size: 13px;
+  cursor: pointer; background: var(--card); border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 7px 12px; transition: all .2s;
+}
+.cbl:has(input[type=checkbox]:checked) {
+  border-color: var(--acc); background: var(--acc2); color: var(--acc);
+}
+.submit-btn {
+  width: 100%; background: var(--acc); color: #fff; border: none;
+  border-radius: 11px; padding: 14px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; margin-top: 18px;
+  transition: opacity .2s, transform .1s;
+}
+.submit-btn:active { opacity: .8; transform: scale(.98); }
+.toast {
+  text-align: center; padding: 12px; color: var(--grn);
+  font-size: 14px; font-weight: 600; display: none;
+}
+.empty { text-align: center; padding: 48px 20px; color: var(--mute); font-size: 14px; }
+
+/* DRAWERS */
+.d-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 300; backdrop-filter: blur(2px);
+}
+.d-panel {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--card); border-radius: 20px 20px 0 0;
+  padding: 24px 18px 44px; z-index: 301;
+  box-shadow: 0 -6px 32px rgba(0,0,0,.18);
+  max-height: 90vh; overflow-y: auto;
+}
+.d-overlay.open, .d-panel.open { display: block; }
+#r-overlay { backdrop-filter: none; }
+.drawer-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.drawer-desc { font-size: 13px; color: var(--mute); line-height: 1.65; }
+.key-status { text-align:center; margin-top:10px; font-size:13px; color:var(--grn); display:none; }
+.tts-voice-note { font-size:11px; color:var(--mute); line-height:1.65; margin-top:6px; }
+.tts-good { color:var(--grn); font-weight:700; }
+.tts-rate-row { display:flex; align-items:center; gap:10px; }
+.tts-rate-row input { flex:1; accent-color:var(--acc); }
+.tts-rate-value { min-width:42px; text-align:right; color:var(--acc); font-size:13px; font-weight:700; }
+.tts-status { display:none; margin-top:10px; padding:8px 10px; border-radius:8px; font-size:12px; line-height:1.5; }
+.tts-status.ok { display:block; color:var(--grn); background:var(--grn2); }
+.tts-status.err { display:block; color:var(--red); background:var(--red2); }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.btn-sec {
+  flex: 0 0 auto; background: var(--bg2); color: var(--mute);
+  border: 1px solid var(--bd); border-radius: 11px;
+  padding: 0 18px; font-size: 14px; cursor: pointer; font-family: inherit;
+}
+
+/* BATCH SELECT */
+.batch-mode .card { position: relative; }
+.sel-dot {
+  display: none; position: absolute; top: 12px; right: 12px;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--bd); background: var(--card);
+  font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
+  pointer-events: none; color: transparent; transition: all .15s; z-index: 1;
+}
+.batch-mode .sel-dot { display: block; }
+.card.sel .sel-dot { border-color: var(--acc); background: var(--acc); color: #fff; }
+.card.sel { border-color: var(--acc) !important; }
+.batch-mode .card-back { display: none; }
+body.batch-mode { padding-bottom: 88px; }
+#batchBtn.on { color: var(--acc); border-color: var(--acc); }
+
+/* BATCH BAR */
+.batch-bar {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--card); border-top: 2px solid var(--bd);
+  padding: 10px 14px 32px; z-index: 250; align-items: center; gap: 8px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.13);
+}
+.batch-bar.show { display: flex; }
+
+/* UNDO TOAST */
+.undo-toast {
+  display: none; position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  background: #333; color: #fff; border-radius: 24px;
+  padding: 10px 8px 10px 18px; font-size: 14px;
+  z-index: 9000; align-items: center; gap: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.35); white-space: nowrap;
+  max-width: 90vw;
+}
+.undo-toast.show { display: flex; }
+.undo-btn {
+  background: var(--acc); color: #fff; border: none;
+  border-radius: 14px; padding: 5px 14px; font-size: 13px;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+}
+
+/* RECORDING DRAWER */
+.rec-preview {
+  margin-top: 14px; background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 12px; padding: 12px 12px 10px;
+}
+.rec-preview .back-lbl { margin-bottom: 6px; }
+.rec-preview .c-ja, .rec-preview .c-en { margin-bottom: 6px; }
+.rec-preview .c-en { margin-bottom: 0; }
+.rec-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.rec-item {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 10px; padding: 10px 12px;
+}
+.rec-item-head { display:flex; align-items:center; gap:10px; }
+.rec-item-label { flex: 1; font-size: 13px; color: var(--mute); }
+.rec-audio {
+  width: 100%; height: 38px;
+  accent-color: var(--acc);
+}
+.rec-del-btn {
+  background: none; border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 5px 11px;
+  font-size: 13px; cursor: pointer; font-family: inherit; color: var(--mute);
+  transition: all .15s; align-self: flex-end;
+}
+.rec-del-btn:hover { border-color: var(--red); color: var(--red); background: var(--red2); }
+#recBtn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all .2s;
+  background: var(--acc); color: #fff;
+}
+#recBtn.recording { background: var(--red); animation: pulse .8s infinite; }
+.rec-empty { font-size: 13px; color: var(--mute); text-align: center; padding: 18px 0; }
+
+/* BATCH ADD easy format */
+.easy-format-example {
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 8px; padding: 10px 12px; font-size: 12px;
+  color: var(--mute); font-family: monospace; white-space: pre-wrap;
+  line-height: 1.7; margin-bottom: 8px;
+}
+
+body{max-width:900px;margin:auto}.c-ja,.c-frame,.vj{font-family:"Microsoft YaHei","PingFang SC",sans-serif}.c-en{font-style:normal;cursor:default}.c-furigana{display:block}button,select{min-height:40px}button{touch-action:manipulation}.tools{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--bg2)}.tools label{display:flex;align-items:center;gap:6px;font-size:12px}.toolbar-button{border:1px solid var(--bd);background:var(--card);color:var(--text);border-radius:9px;padding:6px 12px;cursor:pointer}.notice{font-size:12px;color:var(--mute);padding:12px 14px;line-height:1.6}.group-head{display:flex;align-items:center;gap:8px;width:100%;text-align:left;color:var(--text);border:0;border-bottom:1px solid var(--bd);background:none;font-weight:700;cursor:pointer;padding:10px 0;margin-bottom:10px}.group-head span:last-child{margin-left:auto;font-size:12px;color:var(--mute)}.rec-row{padding:12px 0;border-bottom:1px solid var(--bd)}audio{width:100%;margin:8px 0}.status{padding:10px;font-size:13px;color:var(--acc)}.panel{padding:20px 14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wide{grid-column:1/-1}.drawer-close{float:right}.selected{outline:2px solid var(--acc)}.batch-check{float:right}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}dialog{color:var(--text);background:var(--card);border:1px solid var(--bd);border-radius:16px;width:min(650px,96vw);max-height:90vh;margin:auto;padding:20px}dialog::backdrop{background:#0008}small{color:var(--mute)}.card-front:focus-visible,button:focus-visible{outline:2px solid var(--acc)}@media(max-width:550px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.tab-btn{font-size:12px}.c-frame{font-size:18px}}
+</style></head>
+<body>
+<header><div><div class="h-title">Cùng học tiếng Trung · 中文短句</div><div class="h-sub">Nghe · Nói · Tiến bộ mỗi ngày</div></div><div><button class="toolbar-button" id="settings">⚙ Cài đặt</button> <button class="toolbar-button" id="theme" aria-label="Đổi giao diện">🌙</button></div></header>
+<nav class="tab-nav"><button class="tab-btn active" data-tab="pattern">Mẫu câu</button><button class="tab-btn" data-tab="scene">Chủ đề</button><button class="tab-btn" data-tab="add">＋ Thêm thẻ</button></nav>
+<div class="tools"><label><input id="pinyin-toggle" type="checkbox"> Hiện pinyin</label><label><input id="master-toggle" type="checkbox"> Ẩn từ đã thuộc</label><button class="toolbar-button" id="batch">Chọn nhiều</button></div>
+<div class="tools" id="batch-tools" hidden><span id="selected-count"></span><button class="toolbar-button" id="select-all">Chọn tất cả</button><button class="toolbar-button" id="delete-selected">Xóa đã chọn</button><button class="toolbar-button" id="cancel-batch">Hủy</button></div>
+<main><div id="cards"></div><section class="panel" id="add-panel" hidden>
+<h2>Thêm / sửa thẻ</h2><p class="notice">Chỉ cần câu tiếng Trung và bản dịch tiếng Việt. Pinyin và từ vựng là tùy chọn.</p>
+<form id="card-form" class="grid">
+<label class="fg wide">Câu tiếng Trung *<textarea class="fta" name="zh" required lang="zh-CN" placeholder="只要每天进步一点，就离目标更近一点。"></textarea></label>
+<label class="fg wide">Bản dịch tiếng Việt *<textarea class="fta" name="vi" required placeholder="Chỉ cần mỗi ngày tiến bộ một chút…"></textarea></label>
+<label class="fg wide">Pinyin<input class="fi" name="pinyin" placeholder="Zhǐyào měitiān jìnbù yìdiǎn…"></label>
+<label class="fg">Mẫu câu<input class="fi" name="pattern" list="patterns" placeholder="只要……就……"></label><datalist id="patterns"></datalist>
+<label class="fg">Chủ đề (phân cách bằng dấu phẩy)<input class="fi" name="scenes" list="scenes" placeholder="Học tập, Lớp học"></label><datalist id="scenes"></datalist>
+<label class="fg wide">Từ vựng: tiếng Trung / pinyin / nghĩa tiếng Việt<textarea class="fta" name="vocab" placeholder="进步/jìnbù/tiến bộ, 目标/mùbiāo/mục tiêu"></textarea></label>
+<div class="actions wide"><button class="submit-btn" style="margin:0;width:auto" type="submit">Lưu thẻ</button><button class="toolbar-button" type="button" id="cancel-edit">Hủy chỉnh sửa</button></div>
+</form>
+<hr style="margin:28px 0"><h3>Nhập nhiều thẻ</h3><p class="notice">Mỗi thẻ cách nhau bằng một dòng trống. Dùng định dạng dưới đây hoặc JSON xuất từ ứng dụng.</p>
+<textarea class="fta" id="bulk" style="min-height:180px" placeholder="中文: 我不是不想回你消息，而是刚才在工作。
+越南语: Không phải tôi không muốn trả lời tin nhắn của bạn, mà là lúc nãy tôi đang làm việc.
+拼音: Wǒ bú shì bù xiǎng huí nǐ xiāoxi, érshì gāngcái zài gōngzuò.
+句型: 不是……而是……
+场景: Trò chuyện trực tuyến
+单词: 工作/gōngzuò/làm việc"></textarea><button class="submit-btn" id="bulk-add">Nhập thẻ</button>
+</section></main>
+<p class="notice">Dữ liệu và bản ghi âm chỉ lưu trong trình duyệt này. Nội dung giáo viên thêm trên thiết bị khác không tự đồng bộ. Hãy dùng tệp nhập / xuất để chia sẻ bài học. Bản sao JSON không chứa âm thanh.</p>
+<div class="status" id="status" role="status" aria-live="polite"></div><button class="toolbar-button" id="undo" hidden>Hoàn tác xóa</button>
+<dialog id="settings-dialog"><button class="toolbar-button drawer-close" data-close="settings-dialog">Đóng</button><h2>Cài đặt giọng đọc</h2><p class="notice">Giọng đọc do thiết bị và trình duyệt cung cấp. Không cần tài khoản hay khóa API. Một số giọng trực tuyến cần kết nối mạng.</p><label class="fg">Giọng tiếng Trung (phổ thông)<select class="fi" id="voice"><option value="">Tự động</option></select></label><p class="notice" id="voice-note"></p><label class="fg">Tốc độ <output id="rate-label">0.90×</output><input id="rate" type="range" min="0.6" max="1.2" step="0.05" style="width:100%"></label><div class="actions"><button class="toolbar-button" id="save-settings">Lưu</button><button class="toolbar-button" id="test-voice">Nghe thử</button></div><hr style="margin:24px 0"><h3>Sao lưu và chia sẻ</h3><div class="actions"><button class="toolbar-button" id="export">Xuất JSON</button><button class="toolbar-button" id="import">Nhập JSON</button><input id="import-file" type="file" accept=".json,application/json" hidden></div><p class="notice">Xuất thẻ tự tạo và tiến độ học. Bản ghi âm không nằm trong tệp sao lưu. JSON từ ứng dụng tiếng Nhật không được hỗ trợ.</p></dialog>
+<dialog id="record-dialog"><button class="toolbar-button drawer-close" id="close-record">Đóng</button><h2>Luyện nói · 跟读</h2><button class="toolbar-button" id="record-example">🔊 Nghe câu mẫu</button><p class="c-ja" id="record-zh" lang="zh-CN"></p><p class="c-furigana" id="record-pinyin"></p><p id="record-vi"></p><p class="notice">Tối đa 4 bản ghi mỗi thẻ; bản mới thay thế bản cũ nhất. Nghe lại và so sánh với câu mẫu. Không chấm điểm phát âm tự động. Cần HTTPS và quyền dùng micrô.</p><button class="submit-btn" id="record-button">🎙 Bắt đầu ghi âm</button><div class="status" id="record-status" role="status"></div><div id="recordings"></div></dialog>
+<script>
+const BUILT = [
+  {
+    "id": "seed-0",
+    "pattern": "只要……就……",
+    "zh": "只要每天进步一点，就离目标更近一点。",
+    "pinyin": "Zhǐyào měitiān jìnbù yìdiǎn, jiù lí mùbiāo gèng jìn yìdiǎn.",
+    "vi": "Chỉ cần mỗi ngày tiến bộ một chút, bạn sẽ đến gần mục tiêu hơn một chút.",
+    "scenes": [
+      "Học tập"
+    ],
+    "vocab": [
+      {
+        "zh": "进步",
+        "pinyin": "jìnbù",
+        "vi": "tiến bộ"
+      },
+      {
+        "zh": "目标",
+        "pinyin": "mùbiāo",
+        "vi": "mục tiêu"
+      }
+    ]
+  },
+  {
+    "id": "seed-1",
+    "pattern": "虽然……但是……",
+    "zh": "虽然现在学得很慢，但是我不会放弃。",
+    "pinyin": "Suīrán xiànzài xué de hěn màn, dànshì wǒ bú huì fàngqì.",
+    "vi": "Tuy bây giờ tôi học rất chậm, nhưng tôi sẽ không bỏ cuộc.",
+    "scenes": [
+      "Học tập"
+    ],
+    "vocab": [
+      {
+        "zh": "放弃",
+        "pinyin": "fàngqì",
+        "vi": "bỏ cuộc"
+      }
+    ]
+  },
+  {
+    "id": "seed-2",
+    "pattern": "与其……不如……",
+    "zh": "与其担心自己说错，不如勇敢地开口。",
+    "pinyin": "Yǔqí dānxīn zìjǐ shuō cuò, bùrú yǒnggǎn de kāikǒu.",
+    "vi": "Thay vì lo mình nói sai, hãy mạnh dạn nói ra.",
+    "scenes": [
+      "Học tập"
+    ],
+    "vocab": [
+      {
+        "zh": "担心",
+        "pinyin": "dānxīn",
+        "vi": "lo lắng"
+      },
+      {
+        "zh": "勇敢",
+        "pinyin": "yǒnggǎn",
+        "vi": "dũng cảm"
+      }
+    ]
+  },
+  {
+    "id": "seed-3",
+    "pattern": "不是……而是……",
+    "zh": "我不是不想回你消息，而是刚才在工作。",
+    "pinyin": "Wǒ bú shì bù xiǎng huí nǐ xiāoxi, érshì gāngcái zài gōngzuò.",
+    "vi": "Không phải tôi không muốn trả lời tin nhắn của bạn, mà là lúc nãy tôi đang làm việc.",
+    "scenes": [
+      "Trò chuyện trực tuyến"
+    ],
+    "vocab": [
+      {
+        "zh": "消息",
+        "pinyin": "xiāoxi",
+        "vi": "tin nhắn"
+      },
+      {
+        "zh": "工作",
+        "pinyin": "gōngzuò",
+        "vi": "làm việc"
+      }
+    ]
+  },
+  {
+    "id": "seed-4",
+    "pattern": "别忘了……",
+    "zh": "每天学完之后，别忘了复习一下，也给自己点个赞！",
+    "pinyin": "Měitiān xué wán zhīhòu, bié wàng le fùxí yíxià, yě gěi zìjǐ diǎn ge zàn!",
+    "vi": "Sau khi học xong mỗi ngày, đừng quên ôn lại một chút và tự thưởng cho mình một lượt thích nhé!",
+    "scenes": [
+      "Học tập"
+    ],
+    "vocab": [
+      {
+        "zh": "复习",
+        "pinyin": "fùxí",
+        "vi": "ôn tập"
+      },
+      {
+        "zh": "点赞",
+        "pinyin": "diǎnzàn",
+        "vi": "bấm thích"
+      }
+    ]
+  }
+];
+</script><script src="app.js"></script></body></html>
