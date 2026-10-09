@@ -9,6 +9,8 @@ Open `index.html` for card practice, or serve this directory over HTTPS for micr
 - Device-provided Mandarin speech voices and adjustable speed. Voice availability/quality depends on browser and operating system. No cloud API keys required.
 - Microphone recording and playback, four recordings per card. No automatic pronunciation scoring. Recordings use the separate `zhViRecordings` IndexedDB; card data uses `zhViCards.v1` localStorage.
 
+Audio is stored as ArrayBuffer bytes with the original MIME type for Safari compatibility; existing Blob records remain readable. The recorder negotiates a supported audio format (MP4 preferred). If persistent storage fails, the take remains temporarily available for playback/download during the current page session, with an explicit error name. Reloading the page loses unsaved takes. This fallback is not a cloud backup.
+
 ## Bulk input
 
 Separate cards with a blank line. Vocabulary entries are separated with semicolons.

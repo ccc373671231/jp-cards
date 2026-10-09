@@ -54,14 +54,132 @@ function speak(text){if(!globalThis.speechSynthesis){notice('Trình duyệt khô
 $('rate').value=state.rate;$('rate-label').textContent=Number(state.rate).toFixed(2)+'×';$('rate').oninput=e=>$('rate-label').textContent=Number(e.target.value).toFixed(2)+'×';$('settings').onclick=()=>{refreshVoices();$('settings-dialog').showModal();};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());$('save-settings').onclick=()=>{state.rate=Number($('rate').value);state.voice=$('voice').value;save();$('settings-dialog').close();};$('test-voice').onclick=()=>speak('你好，欢迎一起学习中文。');if(globalThis.speechSynthesis)speechSynthesis.addEventListener('voiceschanged',refreshVoices);refreshVoices();
 $('export').onclick=()=>{const blob=new Blob([JSON.stringify({app:'zh-vi-cards',version:1,userCards:state.userCards,deleted:state.deleted,mastered:state.mastered},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='zh-vi-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 $('import').onclick=()=>$('import-file').click();$('import-file').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>5000000)throw Error('Tệp quá lớn (tối đa 5 MB).');const data=JSON.parse(await file.text());if(!Array.isArray(data)&&(data.app!=='zh-vi-cards'||data.version!==1))throw Error('Chỉ hỗ trợ JSON của ứng dụng Trung–Việt.');const incoming=(Array.isArray(data)?data:data.userCards);if(!Array.isArray(incoming))throw Error('Danh sách thẻ không hợp lệ.');const clean=incoming.map(validate);for(const key of ['deleted','mastered'])if(!Array.isArray(data)&&(!Array.isArray(data[key])||data[key].some(x=>typeof x!=='string')))throw Error('Tiến độ không hợp lệ.');const map=new Map(state.userCards.map(c=>[c.id,c]));clean.forEach(c=>map.set(c.id,c));state.userCards=[...map.values()];if(!Array.isArray(data)){state.deleted=[...new Set([...state.deleted,...data.deleted])];state.mastered=[...new Set([...state.mastered,...data.mastered])];}save();render();notice(`Đã nhập ${clean.length} thẻ.`);}catch(error){notice('Không nhập được: '+error.message);}finally{e.target.value='';}};
-let dbPromise,recordCard=null,recorder=null,recordSession=0,urls=[];
-function db(){return dbPromise||(dbPromise=new Promise((resolve,reject)=>{const request=indexedDB.open('zhViRecordings',1);request.onupgradeneeded=()=>request.result.createObjectStore('recordings',{keyPath:'id'});request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);}));}
-async function records(){const database=await db();return new Promise((resolve,reject)=>{const req=database.transaction('recordings').objectStore('recordings').getAll();req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
-async function writeRecord(item){const database=await db(),all=await records();return new Promise((resolve,reject)=>{const tx=database.transaction('recordings','readwrite'),store=tx.objectStore('recordings');if(item.blob){store.put(item);all.filter(r=>r.card===item.card).sort((a,b)=>b.time-a.time).slice(3).forEach(r=>store.delete(r.id));}else store.delete(item.id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}
+// Audio storage v2: store bytes rather than MediaRecorder-backed Blobs (Safari).
+let dbPromise,recordCard=null,recorder=null,recordSession=0,urls=[],recordBusy=false;
+const temporaryRecords=new Map();
+function db(){
+  if(!dbPromise){
+    dbPromise=new Promise((resolve,reject)=>{
+      const request=indexedDB.open('zhViRecordings',1);
+      request.onupgradeneeded=()=>request.result.createObjectStore('recordings',{keyPath:'id'});
+      request.onsuccess=()=>{const database=request.result;database.onversionchange=()=>{database.close();dbPromise=null;};resolve(database);};
+      request.onerror=()=>reject(request.error);
+    });
+    dbPromise.catch(()=>{dbPromise=null;});
+  }
+  return dbPromise;
+}
+async function records(){
+  const database=await db();
+  return new Promise((resolve,reject)=>{
+    const tx=database.transaction('recordings'),req=tx.objectStore('recordings').getAll();
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+    tx.onabort=()=>reject(tx.error||Error('Read aborted'));
+  });
+}
+async function writeRecord(item){
+  // Convert before opening a transaction: awaiting inside it can make Safari
+  // auto-commit the transaction. Old Blob records remain readable.
+  const stored=item.blob?{id:item.id,card:item.card,time:item.time,mime:item.blob.type,data:await item.blob.arrayBuffer()}:item;
+  const database=await db();
+  return new Promise((resolve,reject)=>{
+    const tx=database.transaction('recordings','readwrite'),store=tx.objectStore('recordings');
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error||Error('Write failed'));
+    tx.onabort=()=>reject(tx.error||Error('Write aborted'));
+    try{
+      if(item.blob){
+        store.put(stored);
+        const req=store.getAll();
+        req.onsuccess=()=>{
+          req.result.filter(r=>r.card===item.card).sort((a,b)=>b.time-a.time).slice(4).forEach(r=>store.delete(r.id));
+        };
+      }else store.delete(item.id);
+    }catch(error){tx.abort();reject(error);}
+  });
+}
+function storageMessage(error){
+  const name=error?.name||'UnknownError';
+  const hint=name==='QuotaExceededError'?'Bộ nhớ đã đầy.':name==='DataCloneError'?'Trình duyệt không lưu được định dạng âm thanh.':name==='SecurityError'||name==='InvalidStateError'?'Bộ nhớ trình duyệt đang bị chặn hoặc không khả dụng.':'Không ghi được vào bộ nhớ trình duyệt.';
+  return hint+' ('+name+')';
+}
 function clearUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[];}
-async function showRecords(){const card=recordCard;try{const list=(await records()).filter(r=>r.card===card).sort((a,b)=>b.time-a.time);if(card!==recordCard)return;clearUrls();$('recordings').replaceChildren();list.forEach(r=>{const row=document.createElement('div'),audio=document.createElement('audio'),del=document.createElement('button');const url=URL.createObjectURL(r.blob);urls.push(url);audio.controls=true;audio.src=url;audio.style.maxWidth='100%';del.textContent='Xóa';del.className='toolbar-button';del.onclick=async()=>{try{await writeRecord({id:r.id});showRecords();}catch{$('record-status').textContent='Không xóa được bản ghi.';}};row.append(audio,del);$('recordings').append(row);});}catch{$('record-status').textContent='Không truy cập được bộ nhớ ghi âm.';}}
-function openRecord(id){recordCard=id;const c=cards().find(c=>c.id===id);$('record-zh').textContent=c.zh;$('record-pinyin').textContent=state.pinyin?c.pinyin:'';$('record-vi').textContent=c.vi;$('record-status').textContent='';$('record-dialog').showModal();showRecords();}
+function recordingBlob(item){return item.blob||new Blob([item.data],{type:item.mime||'audio/mp4'});}
+async function showRecords(){
+  const card=recordCard,session=recordSession;
+  let list=[],readError;
+  try{list=(await records()).filter(r=>r.card===card);}catch(error){readError=error;}
+  if(card!==recordCard||session!==recordSession)return;
+  const merged=new Map(list.map(r=>[r.id,r]));
+  temporaryRecords.forEach(r=>{if(r.card===card)merged.set(r.id,r);});
+  clearUrls();$('recordings').replaceChildren();
+  [...merged.values()].sort((a,b)=>b.time-a.time).forEach(r=>{
+    const row=document.createElement('div'),audio=document.createElement('audio'),del=document.createElement('button'),download=document.createElement('a'),label=document.createElement('p');
+    const blob=recordingBlob(r),url=URL.createObjectURL(blob);urls.push(url);
+    label.textContent=new Date(r.time).toLocaleString('vi-VN')+(temporaryRecords.has(r.id)?' — Tạm thời, chưa lưu':'');
+    audio.controls=true;audio.preload='metadata';audio.src=url;audio.style.maxWidth='100%';
+    download.textContent='Tải bản ghi';download.href=url;download.download='luyen-noi-'+r.time+(blob.type.includes('mp4')?'.m4a':blob.type.includes('ogg')?'.ogg':'.webm');download.className='toolbar-button';
+    del.textContent='Xóa';del.className='toolbar-button';
+    del.onclick=async()=>{
+      if(temporaryRecords.has(r.id)){temporaryRecords.delete(r.id);showRecords();return;}
+      try{await writeRecord({id:r.id});showRecords();}catch(error){$('record-status').textContent=storageMessage(error);}
+    };
+    row.append(label,audio,download,del);$('recordings').append(row);
+  });
+  if(readError)$('record-status').textContent=storageMessage(readError)+' Bản ghi tạm vẫn có thể nghe / tải xuống; sẽ mất khi tải lại trang.';
+}
+function openRecord(id){
+  recordCard=id;const c=cards().find(c=>c.id===id);
+  $('record-zh').textContent=c.zh;$('record-pinyin').textContent=state.pinyin?c.pinyin:'';$('record-vi').textContent=c.vi;
+  $('record-status').textContent='';$('record-dialog').showModal();showRecords();
+}
 function closeRecord(){recordSession++;if(recorder?.state==='recording')recorder.stop();recordCard=null;clearUrls();$('record-dialog').close();}
-$('close-record').onclick=closeRecord;$('record-dialog').addEventListener('cancel',e=>{e.preventDefault();closeRecord();});$('record-example').onclick=()=>{const c=cards().find(c=>c.id===recordCard);if(c)speak(c.zh);};
-$('record-button').onclick=async()=>{if(recorder?.state==='recording'){recorder.stop();return;}if(!recordCard)return;if(!globalThis.isSecureContext||!navigator.mediaDevices?.getUserMedia||!globalThis.MediaRecorder){$('record-status').textContent='Cần HTTPS và trình duyệt hỗ trợ ghi âm.';return;}const card=recordCard,session=++recordSession;let acquired=null;$('record-button').disabled=true;try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});acquired=stream;if(session!==recordSession||card!==recordCard){stream.getTracks().forEach(t=>t.stop());return;}const chunks=[],r=new MediaRecorder(stream);recorder=r;r.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};r.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());if(recorder===r)recorder=null;$('record-button').textContent='🎙 Bắt đầu ghi âm';const blob=new Blob(chunks,{type:r.mimeType||'audio/webm'});if(!blob.size)return;try{await writeRecord({id:uid(),card,time:Date.now(),blob});if(recordCard===card){$('record-status').textContent='Đã lưu. Nghe lại bên dưới.';showRecords();}}catch{$('record-status').textContent='Không lưu được bản ghi. Kiểm tra dung lượng lưu trữ.';}};r.onerror=()=>{if(r.state!=='inactive')r.stop();stream.getTracks().forEach(t=>t.stop());$('record-status').textContent='Ghi âm bị lỗi. Vui lòng thử lại.';};r.start();$('record-button').textContent='⏹ Dừng và lưu';$('record-status').textContent='Đang ghi âm…';}catch{acquired?.getTracks().forEach(t=>t.stop());$('record-status').textContent='Không mở được micrô. Hãy cấp quyền và thử lại.';}finally{$('record-button').disabled=false;}};
+$('close-record').onclick=closeRecord;
+$('record-dialog').addEventListener('cancel',e=>{e.preventDefault();closeRecord();});
+$('record-example').onclick=()=>{const c=cards().find(c=>c.id===recordCard);if(c)speak(c.zh);};
+function recorderOptions(){
+  const mime=['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(type=>MediaRecorder.isTypeSupported?.(type));
+  return mime?{mimeType:mime}:{};
+}
+$('record-button').onclick=async()=>{
+  if(recorder?.state==='recording'){
+    $('record-button').disabled=true;$('record-status').textContent='Đang xử lý và lưu…';recorder.stop();return;
+  }
+  if(recordBusy||!recordCard)return;
+  if(!globalThis.isSecureContext||!navigator.mediaDevices?.getUserMedia||!globalThis.MediaRecorder){$('record-status').textContent='Cần HTTPS và trình duyệt hỗ trợ ghi âm.';return;}
+  const card=recordCard,session=++recordSession;let acquired=null;
+  recordBusy=true;$('record-button').disabled=true;
+  try{
+    globalThis.speechSynthesis?.cancel();
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});acquired=stream;
+    if(session!==recordSession||card!==recordCard){stream.getTracks().forEach(t=>t.stop());recordBusy=false;$('record-button').disabled=false;return;}
+    const chunks=[],r=new MediaRecorder(stream,recorderOptions());let recordingError=null;recorder=r;
+    r.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+    r.onstop=async()=>{
+      if(recorder===r)recorder=null;
+      try{
+        const blob=new Blob(chunks,{type:r.mimeType||chunks[0]?.type||'audio/mp4'});
+        if(!blob.size){if(recordCard===card)$('record-status').textContent=recordingError?'Ghi âm bị lỗi. Vui lòng thử lại.':'Không nhận được âm thanh. Hãy ghi ít nhất vài giây rồi thử lại.';return;}
+        const item={id:uid(),card,time:Date.now(),blob};
+        temporaryRecords.set(item.id,item);
+        // Keep at most four unsaved takes per card.
+        [...temporaryRecords.values()].filter(r=>r.card===card).sort((a,b)=>b.time-a.time).slice(4).forEach(r=>temporaryRecords.delete(r.id));
+        let saveError;
+        try{await writeRecord(item);temporaryRecords.delete(item.id);}catch(error){saveError=error;}
+        if(recordCard===card){
+          await showRecords();
+          $('record-status').textContent=saveError?storageMessage(saveError)+' Có thể nghe / tải bản ghi tạm bên dưới. Bản tạm sẽ mất khi tải lại trang.':'Đã lưu. Nghe lại bên dưới.';
+        }
+      }finally{
+        stream.getTracks().forEach(t=>t.stop());recordBusy=false;$('record-button').disabled=false;$('record-button').textContent='🎙 Bắt đầu ghi âm';
+      }
+    };
+    r.onerror=e=>{recordingError=e.error||Error('Recording failed');if(r.state!=='inactive')r.stop();};
+    r.start();$('record-button').disabled=false;$('record-button').textContent='⏹ Dừng và lưu';$('record-status').textContent='Đang ghi âm…';
+  }catch(error){
+    acquired?.getTracks().forEach(t=>t.stop());recorder=null;recordBusy=false;$('record-button').disabled=false;
+    $('record-status').textContent='Không mở được micrô / ghi âm. Hãy kiểm tra quyền và thử lại. ('+(error.name||'UnknownError')+')';
+  }
+};
 render();
