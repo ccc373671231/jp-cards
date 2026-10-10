@@ -22,7 +22,7 @@ function setTab(value) { tab=value; document.querySelectorAll('[data-tab]').forE
 function render() {
   $('prompt-mode').value=state.prompt;$('ipa-toggle').checked=state.ipa; $('master-toggle').checked=state.hideMaster; document.documentElement.dataset.theme=state.dark?'dark':'light';
   document.documentElement.dataset.sky=state.starTheme?'on':'off';
-  $('theme').textContent=state.starTheme?'☀ 米白':'✦ 星空';
+  $('theme').textContent=state.starTheme?'☀ 晨光':'✦ 星空';
   $('batch-tools').hidden=!batch; $('selected-count').textContent=`已选：${selected.size}`;
   const all=cards(), groups=new Map();
   all.forEach(c=>(tab==='scene'?c.scenes:[c.pattern]).forEach(g=>{if(!groups.has(g))groups.set(g,[]);groups.get(g).push(c);}));

@@ -430,6 +430,26 @@ label.fg{display:flex;flex-direction:column;gap:6px;font-size:13px}.fi,.fta{widt
 [data-sky=on] .fi::placeholder,[data-sky=on] .fta::placeholder{color:#99a6bf}
 [data-sky=on] dialog{background:#10192e}[data-sky=on] .status{color:#e9c786}
 [data-sky=on] button:focus-visible,[data-sky=on] summary:focus-visible,[data-sky=on] a:focus-visible{outline:2px solid #f0d49a;outline-offset:3px}
+[data-sky=off]{--bg:#f7f7f0;--bg2:#edf0e8;--card:#fffffff2;--bd:#d5dcd1;--text:#303d37;--mute:#637268;--acc:#476c59;--acc2:#eaf0e6;--sh:0 3px 7px #354c3a05,0 12px 30px #354c3a0c;background:#f7f7f0}
+[data-sky=off] body{background:transparent;isolation:isolate}
+[data-sky=off] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 0% 8%,#f4dda978,transparent 48%),radial-gradient(ellipse at 100% 68%,#b7cdb36b,transparent 52%),radial-gradient(ellipse at 18% 95%,#eadbb447,transparent 45%),linear-gradient(135deg,#fcfaf1,#f4f7f1 65%,#edf3ec)}
+[data-sky=off] body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.55;background-image:radial-gradient(circle at 35px 63px,#fffdf3 0 1px,#f0d89a44 2px,transparent 6px),radial-gradient(circle at 173px 211px,#fffefa 0 1px,transparent 4px);background-size:431px 397px,563px 521px}
+[data-sky=off] header,[data-sky=off] .tab-nav{background:#fcfdf5eb;border-color:#d5dcd1}
+[data-sky=off] .hero{background:linear-gradient(115deg,#fff9e752,#f4f8ef38);border-bottom:1px solid #d5dcd166}
+[data-sky=off] .hero h1{color:#34594f}[data-sky=off] .hero p{color:#626c63}[data-sky=off] .hero .encouragement{color:#59735b}
+[data-sky=off] .eyebrow{color:#657661}[data-sky=off] .intent{color:#5c7656}
+[data-sky=off] .tools{background:#f4f7ede3;border-bottom:1px solid #d5dcd188}
+[data-sky=off] .card{background:#fffffff0;border-color:#d9dfd4;box-shadow:var(--sh)}
+[data-sky=off] .toolbar-button{background:linear-gradient(145deg,#fffffff5,#f6f8f0ee);border-color:#cbd4c6;color:#35574a;box-shadow:0 2px 5px #354c3a05}
+[data-sky=off] .toolbar-button:hover{background:#eaf1e4;border-color:#8ea68a}
+[data-sky=off] .toolbar-button:disabled{opacity:.4}
+[data-sky=off] .submit-btn{background:linear-gradient(135deg,#68846b,#4d6e57);color:#fff}
+[data-sky=off] .grammar{background:#eef3e9;border-color:#90a67e;color:#415e4b}
+[data-sky=off] .c-furigana{background:#f0f2e9;color:#59695b}
+[data-sky=off] .fi,[data-sky=off] .fta{background:#ffffffeb;border-color:#cbd4c6;color:#303d37}
+[data-sky=off] .fi::placeholder,[data-sky=off] .fta::placeholder{color:#6e796d}
+[data-sky=off] dialog{background:#fbfcf5}
+[data-sky=off] button:focus-visible,[data-sky=off] summary:focus-visible,[data-sky=off] a:focus-visible{outline:2px solid #476c59;outline-offset:3px}
 </style></head><body>
 <header><div><div class="h-title">开口积累 · 英语短句</div><div class="h-sub">从“我认识”到“我会说”</div></div><div><button class="toolbar-button" id="settings">⚙ 设置</button> <button class="toolbar-button" id="theme" aria-label="切换星空与米白主题">☀ 米白</button></div></header>
 <section class="hero"><div class="eyebrow">SMALL SENTENCES · REAL EXPRESSION</div><h1>把心之所想，化为脱口而出的英语</h1><p>根据中文意思，试着用英语表达，再展开英文答案。<br>先听一遍，再跟读一遍。<span class="encouragement">保持开口的习惯，积跬步，至千里。</span></p></section>
@@ -636,5 +656,5 @@ const BUILT = [
     ]
   }
 ];
-</script><script src="app.js?v=20261010-sky1"></script></body></html>
+</script><script src="app.js?v=20261010-morning1"></script></body></html>
 
