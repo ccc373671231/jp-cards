@@ -7,6 +7,10 @@ const ctx={console,Blob,URL,setTimeout,clearTimeout,confirm:()=>true,navigator:{
 vm.createContext(ctx);vm.runInContext(html.match(/const BUILT = [\s\S]*?;\s*<\/script>/)[0].replace(/<\/script>/,''),ctx);vm.runInContext(fs.readFileSync(__dirname+'/app.js','utf8'),ctx);
 function run(code){return vm.runInContext(code,ctx);}
 assert.equal(run('cards().length'),7);
+assert.equal(ctx.document.documentElement.dataset.sky,'on');
+elements.get('theme').onclick();assert.equal(ctx.document.documentElement.dataset.sky,'off');
+assert.equal(JSON.parse(storage.get('enZhCards.v1')).starTheme,false);
+elements.get('theme').onclick();assert.equal(ctx.document.documentElement.dataset.sky,'on');
 assert.match(elements.get('cards').innerHTML,/本来可以/);
 assert.match(elements.get('cards').innerHTML,/grammar/);
 for(const mode of ['zh','en']){
