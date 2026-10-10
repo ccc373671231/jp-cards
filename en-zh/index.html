@@ -401,17 +401,18 @@ body{max-width:900px;margin:auto}.c-ja,.c-frame,.vj{font-family:"Microsoft YaHei
 :root{--acc:#346c60;--acc2:#e7f2ee}body{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
 [lang=en],.answer{font-family:Arial,system-ui,sans-serif}
 header{gap:12px}.h-title{letter-spacing:0}.tab-nav{top:72px}
-.hero{padding:26px 18px 12px}.hero h1{font-size:26px;line-height:1.4;margin-bottom:8px}.hero p{color:var(--mute);font-size:14px;line-height:1.7}
+.hero{padding:22px 18px 12px}.hero h1{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:24px;font-weight:600;letter-spacing:.02em;color:#34594f;line-height:1.5;margin-bottom:10px;text-wrap:pretty}.hero p{color:#776e64;font-size:14px;line-height:1.85}.hero .encouragement{display:block;margin-top:6px;color:#526f63;font-weight:500}
+[data-theme=dark] .hero h1{color:#b3d4c8}[data-theme=dark] .hero p{color:#b7afa6}[data-theme=dark] .hero .encouragement{color:#a0bfb1}
 .eyebrow{font-size:11px;letter-spacing:2px;color:var(--acc);margin-bottom:8px;font-weight:700}
 .intent{color:var(--acc);font-size:13px;margin-top:8px}summary small{display:block;margin-top:8px}.answer{font-size:19px;line-height:1.7;margin:16px 0 8px}
 .grammar{border-left:3px solid var(--acc);background:var(--acc2);margin-top:12px;padding:12px;color:var(--text)}
 .c-furigana{font-family:Arial,sans-serif}.c-ja{font-family:inherit;font-size:17px}
 .submit-btn{background:var(--acc)}a.toolbar-button{display:inline-block;text-decoration:none;margin:4px}
 label.fg{display:flex;flex-direction:column;gap:6px;font-size:13px}.fi,.fta{width:100%}.panel{padding-top:12px}
-@media(max-width:550px){header{padding:12px}.h-title{font-size:15px}.h-sub{font-size:10px}.toolbar-button{padding:6px 10px}.hero h1{font-size:23px}.tab-nav{position:static}}
+@media(max-width:550px){header{padding:12px}.h-title{font-size:15px}.h-sub{font-size:10px}.toolbar-button{padding:6px 10px}.hero h1{font-size:21px}.tab-nav{position:static}}
 </style></head><body>
 <header><div><div class="h-title">开口积累 · 英语短句</div><div class="h-sub">从“我认识”到“我会说”</div></div><div><button class="toolbar-button" id="settings">⚙ 设置</button> <button class="toolbar-button" id="theme" aria-label="切换明暗主题">🌙</button></div></header>
-<section class="hero"><div class="eyebrow">SMALL SENTENCES · REAL EXPRESSION</div><h1>把心之所想化为脱口而出的英语</h1><p>根据中文意思，试着用英语表达，再展开英文答案。<br>先听一遍，再跟读一遍。<br>保持开口的习惯，积跬步，至千里。</p></section>
+<section class="hero"><div class="eyebrow">SMALL SENTENCES · REAL EXPRESSION</div><h1>把心之所想，化为脱口而出的英语</h1><p>根据中文意思，试着用英语表达，再展开英文答案。<br>先听一遍，再跟读一遍。<span class="encouragement">保持开口的习惯，积跬步，至千里。</span></p></section>
 <nav class="tab-nav" aria-label="卡片导航"><button class="tab-btn active" data-tab="pattern">按句型</button><button class="tab-btn" data-tab="scene">按场景</button><button class="tab-btn" data-tab="add">＋ 添加积累</button></nav>
 <div class="tools"><label>卡片提示 <select id="prompt-mode" class="fi"><option value="zh">中文 → 尝试说英文</option><option value="en">英文 → 理解与跟读</option></select></label><label><input id="ipa-toggle" type="checkbox"> 显示音标</label><label><input id="master-toggle" type="checkbox"> 隐藏已掌握词汇</label><button class="toolbar-button" id="batch">批量选择</button></div>
 <div class="tools" id="batch-tools" hidden><span id="selected-count"></span><button class="toolbar-button" id="select-all">全选</button><button class="toolbar-button" id="delete-selected">删除所选</button><button class="toolbar-button" id="cancel-batch">取消</button></div>
