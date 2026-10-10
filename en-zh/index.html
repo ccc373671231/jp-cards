@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="为有基础但开不了口的成年人设计：积累想不到用的英语句型，听例句、跟读录音、练习主动表达。">
+<title>开口积累 · 英语短句</title>
+<style>
+[hidden] { display: none !important; }
+
+:root {
+  --bg:   #f5f1ec;
+  --bg2:  #ebe5dc;
+  --card: #ffffff;
+  --bd:   #ddd7ce;
+  --text: #28231e;
+  --mute: #8a8078;
+  --acc:  #4e7ca1;
+  --acc2: #e8f1f8;
+  --grn:  #4d8c6f;
+  --grn2: #e6f4ec;
+  --amb:  #b5722a;
+  --amb2: #fdf0e0;
+  --red:  #c0392b;
+  --red2: #fdecea;
+  --sh:   0 1px 4px rgba(0,0,0,.06), 0 3px 10px rgba(0,0,0,.05);
+  --r:    13px;
+}
+[data-theme=dark] {
+  --bg:   #181824;
+  --bg2:  #1e1e2c;
+  --card: #252538;
+  --bd:   #38385a;
+  --text: #e0dbd4;
+  --mute: #8888a8;
+  --acc:  #7aabcf;
+  --acc2: #1c2a3a;
+  --grn:  #6ab890;
+  --grn2: #192e24;
+  --amb:  #d4953e;
+  --amb2: #2e2014;
+  --red:  #e05c5c;
+  --red2: #2e1a1a;
+  --sh:   0 1px 4px rgba(0,0,0,.3), 0 3px 10px rgba(0,0,0,.25);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei',
+               'Hiragino Sans GB', sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; font-size: 15px; line-height: 1.55;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Japanese content: JP font first, no fallback to JP fonts for CN glyphs */
+.c-frame, .c-ja, .c-furigana, .vj, .vk {
+  font-family: 'Yu Gothic UI', 'Yu Gothic', 'Hiragino Sans', 'Noto Sans JP',
+               'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
+}
+
+/* HEADER */
+header {
+  position: sticky; top: 0; z-index: 200;
+  background: var(--card); border-bottom: 1px solid var(--bd);
+  padding: 13px 18px; display: flex; align-items: center;
+  justify-content: space-between; box-shadow: var(--sh);
+}
+.h-title { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+.h-sub { font-size: 11px; color: var(--mute); margin-top: 2px; }
+#themeBtn {
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 20px; padding: 5px 14px; font-size: 14px;
+  cursor: pointer; color: var(--text); font-family: inherit;
+}
+
+/* TABS */
+.tab-nav {
+  position: sticky; top: 58px; z-index: 190;
+  background: var(--card); border-bottom: 1px solid var(--bd);
+  display: flex;
+}
+.tab-btn {
+  flex: 1; background: none; border: none;
+  border-bottom: 2.5px solid transparent;
+  padding: 12px 4px; font-size: 13.5px; font-weight: 500;
+  color: var(--mute); cursor: pointer; font-family: inherit;
+  transition: color .2s, border-color .2s;
+}
+.tab-btn.active { color: var(--acc); border-bottom-color: var(--acc); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* SETTINGS BAR */
+.settings-bar {
+  background: var(--bg2); border-bottom: 1px solid var(--bd);
+  padding: 8px 16px; display: flex; gap: 16px; align-items: center;
+  flex-wrap: wrap;
+}
+.settings-bar label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--mute); cursor: pointer;
+}
+input[type=checkbox] { accent-color: var(--acc); }
+
+/* SECTION */
+.section { padding: 16px 14px 6px; }
+.sec-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--bd);
+  cursor: pointer; user-select: none;
+  touch-action: none;
+}
+.sec-head.drag-ready { cursor: grab; }
+.sec-head.dragging { cursor: grabbing; opacity: .7; }
+.section.drag-over { outline: 2px dashed var(--acc); outline-offset: 4px; }
+.sec-name { font-size: 15px; font-weight: 700; }
+.sec-ja { font-size: 12px; color: var(--mute); }
+.sec-badge {
+  margin-left: auto; background: var(--bg2); color: var(--mute);
+  border-radius: 10px; padding: 2px 9px; font-size: 11.5px;
+}
+.sec-toggle {
+  font-size: 10px; color: var(--mute);
+  display: inline-block; transition: transform .2s;
+}
+.section.collapsed .sec-toggle { transform: rotate(-90deg); }
+.section.collapsed .card { display: none; }
+.section.collapsed .sec-head { margin-bottom: 6px; border-bottom-color: transparent; }
+
+/* CARD */
+.card {
+  background: var(--card); border: 1px solid var(--bd);
+  border-radius: var(--r); margin-bottom: 10px;
+  box-shadow: var(--sh); overflow: hidden; cursor: pointer;
+  transition: box-shadow .15s, transform .1s;
+}
+.card:active { transform: scale(.985); box-shadow: none; }
+.card-front { padding: 15px 16px; }
+.c-frame {
+  font-size: 17px; font-weight: 700; color: var(--acc);
+  line-height: 1.65; margin-bottom: 5px; overflow-wrap: break-word;
+}
+.c-cn { font-size: 13px; color: var(--mute); line-height: 1.5; }
+.c-hint {
+  margin-top: 10px; font-size: 11px; color: var(--mute);
+  display: flex; align-items: center; gap: 4px;
+}
+.c-hint svg { opacity: .45; }
+.card.open .c-hint { display: none; }
+
+/* CARD BACK */
+.card-back {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .28s ease;
+}
+.card.open .card-back { grid-template-rows: 1fr; }
+.card-back-inner { overflow: hidden; border-top: 1px solid var(--bd); }
+.card-back-content { padding: 14px 16px 15px; }
+.back-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  color: var(--mute); text-transform: uppercase; margin-bottom: 8px;
+}
+.c-ja {
+  font-size: 15.5px; font-weight: 500; line-height: 1.85;
+  color: var(--text); margin-bottom: 6px; overflow-wrap: break-word;
+  cursor: pointer; border-radius: 7px; transition: background .15s;
+}
+.c-ja:hover, .c-ja.speaking { background: var(--acc2); }
+/* FURIGANA */
+.c-furigana {
+  font-size: 12px; color: var(--mute); line-height: 1.7;
+  margin-bottom: 6px; overflow-wrap: break-word;
+  padding: 3px 6px; background: var(--bg2); border-radius: 5px;
+  display: none;
+}
+body.show-furigana .c-furigana { display: block; }
+.c-en {
+  font-size: 13px; color: var(--mute); line-height: 1.6; font-style: italic;
+  cursor: pointer; border-radius: 7px; transition: background .15s;
+}
+.c-en:hover, .c-en.speaking { background: var(--bg2); }
+.tts-hint { font-size: 10px; font-style: normal; opacity: .65; margin-left: 5px; }
+
+/* TAGS */
+.c-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+.tag { font-size: 11px; font-weight: 500; border-radius: 6px; padding: 2px 8px; }
+.tag-p { background: var(--amb2); color: var(--amb); }
+.tag-s { background: var(--grn2); color: var(--grn); }
+
+/* VOCAB */
+.vocab-blk {
+  margin-top: 13px; padding-top: 11px;
+  border-top: 1px dashed var(--bd);
+}
+.vocab-ttl {
+  font-size: 10px; font-weight: 700; letter-spacing: .8px;
+  color: var(--mute); margin-bottom: 7px;
+}
+.vocab-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.vchip {
+  background: var(--bg2); border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 5px 6px 5px 10px;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: border-color .2s, background .2s; user-select: none; line-height: 1.45;
+}
+.vchip:active { opacity: .75; }
+.vchip.mastered { border-color: var(--grn); background: var(--grn2); }
+.vchip.mastered .vj { color: var(--grn); }
+.vchip.mastered-hidden { display: none; }
+.vchip.speaking { background: var(--acc2); border-color: var(--acc); }
+.vchip-body { flex: 1; }
+.vj { font-size: 13px; font-weight: 600; display: block; color: var(--text); }
+.vk { font-size: 10px; color: var(--mute); display: block; }
+.vc { font-size: 11px; color: var(--acc); margin-left: 3px; }
+.vchip-star {
+  flex: 0 0 auto; background: none; border: 1.5px solid var(--bd);
+  border-radius: 50%; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--mute); cursor: pointer;
+  transition: all .15s; padding: 0; font-family: inherit; line-height: 1;
+}
+.vchip-star.on { background: var(--grn); border-color: var(--grn); color: #fff; }
+
+/* CARD ACTIONS */
+.card-actions {
+  display: flex; gap: 8px;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--bd);
+}
+.ca-btn {
+  flex: 1; background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 8px; padding: 8px; font-size: 13px;
+  color: var(--mute); cursor: pointer; font-family: inherit;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.ca-btn:hover { background: var(--bd); }
+.ca-del:hover { background: var(--red2); border-color: var(--red); color: var(--red); }
+.ca-rec { }
+.ca-rec.recording { background: var(--red2); border-color: var(--red); color: var(--red); animation: pulse .8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* ADD FORM */
+.add-form { padding: 20px 14px 50px; }
+.fs-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .8px;
+  color: var(--mute); text-transform: uppercase; margin: 22px 0 12px;
+}
+.fs-title:first-child { margin-top: 0; }
+.fg { margin-bottom: 14px; }
+.fg > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.fg .gh { font-size: 11px; color: var(--mute); margin-bottom: 5px; display: block; }
+.fi, .fta {
+  width: 100%; background: var(--card); border: 1.5px solid var(--bd);
+  border-radius: 9px; padding: 10px 12px;
+  font-size: 14px; font-family: inherit; color: var(--text);
+  outline: none; transition: border-color .2s; -webkit-appearance: none;
+}
+.fi:focus, .fta:focus { border-color: var(--acc); }
+.fta { min-height: 66px; resize: vertical; }
+.cbg { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 2px; }
+.cbl {
+  display: flex; align-items: center; gap: 5px; font-size: 13px;
+  cursor: pointer; background: var(--card); border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 7px 12px; transition: all .2s;
+}
+.cbl:has(input[type=checkbox]:checked) {
+  border-color: var(--acc); background: var(--acc2); color: var(--acc);
+}
+.submit-btn {
+  width: 100%; background: var(--acc); color: #fff; border: none;
+  border-radius: 11px; padding: 14px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; margin-top: 18px;
+  transition: opacity .2s, transform .1s;
+}
+.submit-btn:active { opacity: .8; transform: scale(.98); }
+.toast {
+  text-align: center; padding: 12px; color: var(--grn);
+  font-size: 14px; font-weight: 600; display: none;
+}
+.empty { text-align: center; padding: 48px 20px; color: var(--mute); font-size: 14px; }
+
+/* DRAWERS */
+.d-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 300; backdrop-filter: blur(2px);
+}
+.d-panel {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--card); border-radius: 20px 20px 0 0;
+  padding: 24px 18px 44px; z-index: 301;
+  box-shadow: 0 -6px 32px rgba(0,0,0,.18);
+  max-height: 90vh; overflow-y: auto;
+}
+.d-overlay.open, .d-panel.open { display: block; }
+#r-overlay { backdrop-filter: none; }
+.drawer-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.drawer-desc { font-size: 13px; color: var(--mute); line-height: 1.65; }
+.key-status { text-align:center; margin-top:10px; font-size:13px; color:var(--grn); display:none; }
+.tts-voice-note { font-size:11px; color:var(--mute); line-height:1.65; margin-top:6px; }
+.tts-good { color:var(--grn); font-weight:700; }
+.tts-rate-row { display:flex; align-items:center; gap:10px; }
+.tts-rate-row input { flex:1; accent-color:var(--acc); }
+.tts-rate-value { min-width:42px; text-align:right; color:var(--acc); font-size:13px; font-weight:700; }
+.tts-status { display:none; margin-top:10px; padding:8px 10px; border-radius:8px; font-size:12px; line-height:1.5; }
+.tts-status.ok { display:block; color:var(--grn); background:var(--grn2); }
+.tts-status.err { display:block; color:var(--red); background:var(--red2); }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.btn-sec {
+  flex: 0 0 auto; background: var(--bg2); color: var(--mute);
+  border: 1px solid var(--bd); border-radius: 11px;
+  padding: 0 18px; font-size: 14px; cursor: pointer; font-family: inherit;
+}
+
+/* BATCH SELECT */
+.batch-mode .card { position: relative; }
+.sel-dot {
+  display: none; position: absolute; top: 12px; right: 12px;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--bd); background: var(--card);
+  font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
+  pointer-events: none; color: transparent; transition: all .15s; z-index: 1;
+}
+.batch-mode .sel-dot { display: block; }
+.card.sel .sel-dot { border-color: var(--acc); background: var(--acc); color: #fff; }
+.card.sel { border-color: var(--acc) !important; }
+.batch-mode .card-back { display: none; }
+body.batch-mode { padding-bottom: 88px; }
+#batchBtn.on { color: var(--acc); border-color: var(--acc); }
+
+/* BATCH BAR */
+.batch-bar {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--card); border-top: 2px solid var(--bd);
+  padding: 10px 14px 32px; z-index: 250; align-items: center; gap: 8px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.13);
+}
+.batch-bar.show { display: flex; }
+
+/* UNDO TOAST */
+.undo-toast {
+  display: none; position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  background: #333; color: #fff; border-radius: 24px;
+  padding: 10px 8px 10px 18px; font-size: 14px;
+  z-index: 9000; align-items: center; gap: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.35); white-space: nowrap;
+  max-width: 90vw;
+}
+.undo-toast.show { display: flex; }
+.undo-btn {
+  background: var(--acc); color: #fff; border: none;
+  border-radius: 14px; padding: 5px 14px; font-size: 13px;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+}
+
+/* RECORDING DRAWER */
+.rec-preview {
+  margin-top: 14px; background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 12px; padding: 12px 12px 10px;
+}
+.rec-preview .back-lbl { margin-bottom: 6px; }
+.rec-preview .c-ja, .rec-preview .c-en { margin-bottom: 6px; }
+.rec-preview .c-en { margin-bottom: 0; }
+.rec-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.rec-item {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 10px; padding: 10px 12px;
+}
+.rec-item-head { display:flex; align-items:center; gap:10px; }
+.rec-item-label { flex: 1; font-size: 13px; color: var(--mute); }
+.rec-audio {
+  width: 100%; height: 38px;
+  accent-color: var(--acc);
+}
+.rec-del-btn {
+  background: none; border: 1.5px solid var(--bd);
+  border-radius: 8px; padding: 5px 11px;
+  font-size: 13px; cursor: pointer; font-family: inherit; color: var(--mute);
+  transition: all .15s; align-self: flex-end;
+}
+.rec-del-btn:hover { border-color: var(--red); color: var(--red); background: var(--red2); }
+#recBtn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  border: none; border-radius: 11px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all .2s;
+  background: var(--acc); color: #fff;
+}
+#recBtn.recording { background: var(--red); animation: pulse .8s infinite; }
+.rec-empty { font-size: 13px; color: var(--mute); text-align: center; padding: 18px 0; }
+
+/* BATCH ADD easy format */
+.easy-format-example {
+  background: var(--bg2); border: 1px solid var(--bd);
+  border-radius: 8px; padding: 10px 12px; font-size: 12px;
+  color: var(--mute); font-family: monospace; white-space: pre-wrap;
+  line-height: 1.7; margin-bottom: 8px;
+}
+
+body{max-width:900px;margin:auto}.c-ja,.c-frame,.vj{font-family:"Microsoft YaHei","PingFang SC",sans-serif}.c-en{font-style:normal;cursor:default}.c-furigana{display:block}button,select{min-height:40px}button{touch-action:manipulation}.tools{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--bg2)}.tools label{display:flex;align-items:center;gap:6px;font-size:12px}.toolbar-button{border:1px solid var(--bd);background:var(--card);color:var(--text);border-radius:9px;padding:6px 12px;cursor:pointer}.notice{font-size:12px;color:var(--mute);padding:12px 14px;line-height:1.6}.group-head{display:flex;align-items:center;gap:8px;width:100%;text-align:left;color:var(--text);border:0;border-bottom:1px solid var(--bd);background:none;font-weight:700;cursor:pointer;padding:10px 0;margin-bottom:10px}.group-head span:last-child{margin-left:auto;font-size:12px;color:var(--mute)}.rec-row{padding:12px 0;border-bottom:1px solid var(--bd)}audio{width:100%;margin:8px 0}.status{padding:10px;font-size:13px;color:var(--acc)}.panel{padding:20px 14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wide{grid-column:1/-1}.drawer-close{float:right}.selected{outline:2px solid var(--acc)}.batch-check{float:right}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}dialog{color:var(--text);background:var(--card);border:1px solid var(--bd);border-radius:16px;width:min(650px,96vw);max-height:90vh;margin:auto;padding:20px}dialog::backdrop{background:#0008}small{color:var(--mute)}.card-front:focus-visible,button:focus-visible{outline:2px solid var(--acc)}@media(max-width:550px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.tab-btn{font-size:12px}.c-frame{font-size:18px}}
+
+:root{--acc:#346c60;--acc2:#e7f2ee}body{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+[lang=en],.answer{font-family:Arial,system-ui,sans-serif}
+header{gap:12px}.h-title{letter-spacing:0}.tab-nav{top:72px}
+.hero{padding:26px 18px 12px}.hero h1{font-size:26px;line-height:1.4;margin-bottom:8px}.hero p{color:var(--mute);font-size:14px;line-height:1.7}
+.eyebrow{font-size:11px;letter-spacing:2px;color:var(--acc);margin-bottom:8px;font-weight:700}
+.intent{color:var(--acc);font-size:13px;margin-top:8px}summary small{display:block;margin-top:8px}.answer{font-size:19px;line-height:1.7;margin:16px 0 8px}
+.grammar{border-left:3px solid var(--acc);background:var(--acc2);margin-top:12px;padding:12px;color:var(--text)}
+.c-furigana{font-family:Arial,sans-serif}.c-ja{font-family:inherit;font-size:17px}
+.submit-btn{background:var(--acc)}a.toolbar-button{display:inline-block;text-decoration:none;margin:4px}
+label.fg{display:flex;flex-direction:column;gap:6px;font-size:13px}.fi,.fta{width:100%}.panel{padding-top:12px}
+@media(max-width:550px){header{padding:12px}.h-title{font-size:15px}.h-sub{font-size:10px}.toolbar-button{padding:6px 10px}.hero h1{font-size:23px}.tab-nav{position:static}}
+</style></head><body>
+<header><div><div class="h-title">开口积累 · 英语短句</div><div class="h-sub">从“我认识”到“我会说” · B1–B2</div></div><div><button class="toolbar-button" id="settings">⚙ 设置</button> <button class="toolbar-button" id="theme" aria-label="切换明暗主题">🌙</button></div></header>
+<section class="hero"><div class="eyebrow">SMALL SENTENCES · REAL EXPRESSION</div><h1>把想得到的意思，<br>变成说得出的英语。</h1><p>先看中文意图，试着开口，再展开英文答案。<br>每天积累一句，听一遍，再跟读一遍。</p></section>
+<nav class="tab-nav" aria-label="卡片导航"><button class="tab-btn active" data-tab="pattern">按句型</button><button class="tab-btn" data-tab="scene">按场景</button><button class="tab-btn" data-tab="add">＋ 添加积累</button></nav>
+<div class="tools"><label>卡片提示 <select id="prompt-mode" class="fi"><option value="zh">中文 → 尝试说英文</option><option value="en">英文 → 理解与跟读</option></select></label><label><input id="ipa-toggle" type="checkbox"> 显示音标</label><label><input id="master-toggle" type="checkbox"> 隐藏已掌握词汇</label><button class="toolbar-button" id="batch">批量选择</button></div>
+<div class="tools" id="batch-tools" hidden><span id="selected-count"></span><button class="toolbar-button" id="select-all">全选</button><button class="toolbar-button" id="delete-selected">删除所选</button><button class="toolbar-button" id="cancel-batch">取消</button></div>
+<main><div id="cards"></div><section class="panel" id="add-panel" hidden>
+<h2>添加 / 编辑短句</h2><p class="notice">英文和中文为必填。音标、表达意图、句型说明及词汇均可选。</p>
+<form id="card-form" class="grid">
+<label class="fg wide">英文短句 *<textarea class="fta" name="en" required lang="en" placeholder="I could have asked for help."></textarea></label>
+<label class="fg wide">中文翻译 *<textarea class="fta" name="zh" required placeholder="我本来可以求助。"></textarea></label>
+<label class="fg wide">表达意图<input class="fi" name="intent" placeholder="本来可以……却没有"></label>
+<label class="fg wide">音标（可选）<input class="fi" name="ipa" placeholder="可只填写不熟悉词的音标"></label>
+<label class="fg">句型<input class="fi" name="pattern" list="patterns" placeholder="could have done…"></label><datalist id="patterns"></datalist>
+<label class="fg">场景（多个用逗号分隔）<input class="fi" name="scenes" list="scenes" placeholder="学习与行动, 自我成长"></label><datalist id="scenes"></datalist>
+<label class="fg wide">句型说明<textarea class="fta" name="notes" placeholder="什么时候能用？容易混淆的地方是什么？"></textarea></label>
+<label class="fg wide">重点词汇：英文 | 音标 | 中文（每行一条）<textarea class="fta" name="vocab" placeholder="give up | /ɡɪv ʌp/ | 放弃"></textarea></label>
+<div class="actions wide"><button class="submit-btn" style="margin:0;width:auto" type="submit">保存卡片</button><button class="toolbar-button" type="button" id="cancel-edit">取消编辑</button></div></form>
+<hr style="margin:28px 0"><h3>批量导入短句</h3><p class="notice">卡片之间空一行；词汇之间用英文分号分隔。备份 JSON 文件请在“设置”中导入。</p>
+<textarea class="fta" id="bulk" style="min-height:180px" placeholder="英文: I could have asked for help.
+中文: 我本来可以求助。
+句型: could have done…
+意图: 本来可以……却没有
+说明: 回顾过去未采取的选择。
+场景: 学习与行动
+单词: ask for help | | 求助"></textarea><button class="submit-btn" id="bulk-add">导入短句</button>
+</section></main>
+<p class="notice">卡片和录音只保存在当前设备的浏览器中，不会自动跨设备同步。可以用 JSON 文件分享教材与备份卡片；JSON 不包含录音，重要录音请单独下载。此版本与日语版、中越版分别存储。</p>
+<div class="status" id="status" role="status" aria-live="polite"></div><button class="toolbar-button" id="undo" hidden>撤销删除</button>
+<dialog id="settings-dialog"><button class="toolbar-button drawer-close" data-close="settings-dialog">关闭</button><h2>朗读与备份</h2><p class="notice">使用设备提供的英语音色，无需 API 密钥。美式、英式等可用音色取决于设备和浏览器；部分在线音色需要网络。</p>
+<label class="fg">英语音色<select class="fi" id="voice"><option value="">自动选择</option></select></label><p class="notice" id="voice-note"></p>
+<label class="fg">语速 <output id="rate-label">0.90×</output><input id="rate" type="range" min="0.6" max="1.2" step="0.05" style="width:100%"></label>
+<div class="actions"><button class="toolbar-button" id="save-settings">保存设置</button><button class="toolbar-button" id="test-voice">试听</button></div>
+<hr style="margin:24px 0"><h3>备份与分享</h3><div class="actions"><button class="toolbar-button" id="export">导出 JSON</button><button class="toolbar-button" id="import">导入 JSON</button><input id="import-file" type="file" accept=".json,application/json" hidden></div><p class="notice">导出自建卡片与词汇掌握进度，不包含录音。仅支持本英语版格式；相同 ID 的卡片会被导入内容覆盖。</p></dialog>
+<dialog id="record-dialog"><button class="toolbar-button drawer-close" id="close-record">关闭</button><h2>听一句，跟读一句</h2><button class="toolbar-button" id="record-example">🔊 听例句</button><p class="answer" id="record-en" lang="en"></p><p class="c-furigana" id="record-ipa"></p><p id="record-zh"></p><p class="notice">每张卡片保留最近 4 条已保存录音。支持回听对照，不提供自动发音评分。录音需要 HTTPS 和麦克风权限。</p><button class="submit-btn" id="record-button">🎙 开始录音</button><div class="status" id="record-status" role="status"></div><div id="recordings"></div></dialog>
+<script>
+const BUILT = [
+  {
+    "id": "en-seed-1",
+    "pattern": "end up doing…",
+    "intent": "本来……结果却……",
+    "en": "I wanted to find the perfect way to learn English, but I ended up spending more time planning than practising.",
+    "zh": "我想找到最完美的英语学习方法，结果花在规划上的时间比练习还多。",
+    "notes": "end up doing 后接动作；end up with 后接名词。它强调最终结果，不一定是坏结果。",
+    "ipa": "",
+    "scenes": [
+      "学习与行动"
+    ],
+    "vocab": [
+      {
+        "en": "end up doing",
+        "ipa": "",
+        "zh": "最后做了……"
+      },
+      {
+        "en": "practise",
+        "ipa": "/ˈpræktɪs/",
+        "zh": "练习（英式拼写；美式为 practice）"
+      }
+    ]
+  },
+  {
+    "id": "en-seed-2",
+    "pattern": "could have done…",
+    "intent": "本来可以……却没有",
+    "en": "I could have asked for help, but I was too afraid of looking stupid.",
+    "zh": "我本来可以求助，但我太怕显得自己很笨。",
+    "notes": "could have + 过去分词：回顾过去未采取的选择。本句并不表示已经求助。",
+    "ipa": "",
+    "scenes": [
+      "自我成长"
+    ],
+    "vocab": [
+      {
+        "en": "ask for help",
+        "ipa": "",
+        "zh": "寻求帮助"
+      },
+      {
+        "en": "be afraid of doing",
+        "ipa": "",
+        "zh": "害怕做某事"
+      }
+    ]
+  },
+  {
+    "id": "en-seed-3",
+    "pattern": "If it weren’t for…",
+    "intent": "要不是有……",
+    "en": "If it weren’t for my study partner, I’d probably give up whenever things got difficult.",
+    "zh": "要不是有我的学习搭档，我可能一遇到困难就会放弃。",
+    "notes": "If it weren’t for + 名词，… would + 动词原形：假设现在没有某种支持，也可用于表达感谢。",
+    "ipa": "",
+    "scenes": [
+      "学习与行动"
+    ],
+    "vocab": [
+      {
+        "en": "study partner",
+        "ipa": "",
+        "zh": "学习搭档"
+      },
+      {
+        "en": "give up",
+        "ipa": "/ɡɪv ʌp/",
+        "zh": "放弃"
+      }
+    ]
+  },
+  {
+    "id": "en-seed-4",
+    "pattern": "Just because… doesn’t mean…",
+    "intent": "……并不代表……",
+    "en": "Just because you need more time doesn’t mean you’re not good at it.",
+    "zh": "你需要更多时间，并不代表你不擅长这件事。",
+    "notes": "用于纠正不一定成立的推断。Just because 后接原因或事实，doesn’t mean 后接被否定的结论。",
+    "ipa": "",
+    "scenes": [
+      "学习与行动"
+    ],
+    "vocab": [
+      {
+        "en": "be good at",
+        "ipa": "",
+        "zh": "擅长"
+      },
+      {
+        "en": "mean",
+        "ipa": "/miːn/",
+        "zh": "意味着"
+      }
+    ]
+  },
+  {
+    "id": "en-seed-5",
+    "pattern": "There’s no point in doing…",
+    "intent": "做……没有意义",
+    "en": "There’s no point in waiting until you feel confident—you build confidence by doing it.",
+    "zh": "等到有信心才行动没有意义——信心是在行动中建立起来的。",
+    "notes": "There’s no point in + 动词-ing；by doing 表示通过做某事。",
+    "ipa": "",
+    "scenes": [
+      "学习与行动"
+    ],
+    "vocab": [
+      {
+        "en": "confident",
+        "ipa": "/ˈkɒnfɪdənt/",
+        "zh": "有信心的"
+      },
+      {
+        "en": "build confidence",
+        "ipa": "",
+        "zh": "建立信心"
+      }
+    ]
+  },
+  {
+    "id": "en-seed-6",
+    "pattern": "might as well do…",
+    "intent": "既然如此，不如……",
+    "en": "I’ve already made a few mistakes, so I might as well keep talking and learn from them.",
+    "zh": "反正我已经犯了几个错，不如继续说下去，从错误中学习。",
+    "notes": "might as well + 动词原形：根据眼前情况，觉得不如就这样做；不是普通的“也许会”。",
+    "ipa": "",
+    "scenes": [
+      "学习与行动"
+    ],
+    "vocab": [
+      {
+        "en": "might as well",
+        "ipa": "",
+        "zh": "不如；还是……吧"
+      },
+      {
+        "en": "learn from",
+        "ipa": "",
+        "zh": "从……中学习"
+      }
+    ]
+  },
+  {
+    "id": "en-seed-7",
+    "pattern": "The last thing … need is…",
+    "intent": "最不需要的就是……",
+    "en": "The last thing you need after a bad day is to be hard on yourself.",
+    "zh": "经历了糟糕的一天之后，你最不需要的就是再苛责自己。",
+    "notes": "the last thing 在这里不是时间顺序上的最后一件事，而是最不需要的事。",
+    "ipa": "",
+    "scenes": [
+      "自我成长"
+    ],
+    "vocab": [
+      {
+        "en": "be hard on yourself",
+        "ipa": "",
+        "zh": "对自己苛刻"
+      },
+      {
+        "en": "a bad day",
+        "ipa": "",
+        "zh": "糟糕的一天"
+      }
+    ]
+  }
+];
+</script><script src="app.js?v=20261010-en1"></script></body></html>
+
