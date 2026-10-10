@@ -9,6 +9,18 @@ function run(code){return vm.runInContext(code,ctx);}
 assert.equal(run('cards().length'),7);
 assert.match(elements.get('cards').innerHTML,/本来可以/);
 assert.match(elements.get('cards').innerHTML,/grammar/);
+for(const mode of ['zh','en']){
+  run(`state.prompt='${mode}';render();`);
+  const first=elements.get('cards').innerHTML.match(/<details>([\s\S]*?)<\/details>/)[1];
+  const summary=first.match(/<summary[^>]*>([\s\S]*?)<\/summary>/)[1];
+  const answer=first.match(/<p class="answer"[^>]*>([\s\S]*?)<\/p>/)[1];
+  const en=run('esc(BUILT[0].en)'),zh=run('esc(BUILT[0].zh)');
+  assert(summary.includes(mode==='zh'?zh:en));
+  assert.equal(answer,mode==='zh'?en:zh);
+  assert.equal(first.split(en).length-1,2); // visible sentence + speak button attribute
+  assert.equal(first.split(zh).length-1,1); // Chinese sentence occurs only once
+}
+run("state.prompt='zh';render();");
 assert.equal(run('voices.length'),2);
 assert.throws(()=>run('validate({zh:"你好",vi:"xin chao"})'));
 assert.equal(run('parseBulk("英文: Keep going.\\n中文: 继续前进。\\n单词: go | /ɡəʊ/ | 去")[0].vocab[0].ipa'),'/ɡəʊ/');
