@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync(__dirname+'/index.html','utf8');
 const elements=new Map();
-function element(){return {value:'',textContent:'',innerHTML:'',hidden:false,checked:false,dataset:{},style:{},children:[],classList:{toggle(){}},addEventListener(){},showModal(){},close(){},replaceChildren(){this.children=[];},append(...items){this.children.push(...items);},click(){},elements:{},reset(){}};}
+function element(){return {value:'',textContent:'',innerHTML:'',hidden:false,checked:false,dataset:{},style:{},children:[],attributes:{},setAttribute(k,v){this.attributes[k]=v;},classList:{toggle(){}},addEventListener(){},showModal(){},close(){},replaceChildren(){this.children=[];},append(...items){this.children.push(...items);},click(){},elements:{},reset(){}};}
 const storage=new Map();
 const ctx={console,Blob,URL,setTimeout,clearTimeout,confirm:()=>true,navigator:{},document:{getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},querySelectorAll(){return [];},documentElement:{dataset:{}},createElement:element},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},speechSynthesis:{getVoices:()=>[{name:'Chinese',lang:'zh-CN',voiceURI:'cn'},{name:'US English',lang:'en-US',voiceURI:'us'},{name:'UK English',lang:'en-GB',voiceURI:'uk'}],addEventListener(){},cancel(){},speak(u){ctx.lastSpeech=u;}},SpeechSynthesisUtterance:function(t){this.text=t;}};
 vm.createContext(ctx);vm.runInContext(html.match(/const BUILT = [\s\S]*?;\s*<\/script>/)[0].replace(/<\/script>/,''),ctx);vm.runInContext(fs.readFileSync(__dirname+'/app.js','utf8'),ctx);
@@ -34,7 +34,13 @@ run('state.userCards.push(validate({id:"en-seed-1",en:"Updated",zh:"已修改",n
 run('state.dark=true;render();');assert.equal(ctx.document.documentElement.dataset.theme,'dark');
 elements.get('voice').value='uk';run('speak("Keep going.");');assert.equal(ctx.lastSpeech.lang,'en-GB');
 assert(storage.has('enZhCards.v1'));assert(!storage.has('zhViCards.v1'));
-elements.get('prompt-mode').value='en';elements.get('prompt-mode').onchange({target:{value:'en'}});assert.equal(run('state.prompt'),'en');
+elements.get('prompt-en').onclick();assert.equal(run('state.prompt'),'en');
+assert.equal(elements.get('prompt-en').attributes['aria-pressed'],'true');
+assert.equal(elements.get('prompt-zh').attributes['aria-pressed'],'false');
+assert.equal(JSON.parse(storage.get('enZhCards.v1')).prompt,'en');
+elements.get('prompt-zh').onclick();assert.equal(run('state.prompt'),'zh');
+assert.equal(elements.get('prompt-zh').attributes['aria-pressed'],'true');
+elements.get('prompt-en').onclick();
 assert.match(elements.get('cards').innerHTML,/lang="en"/);
 console.log('PASS: 7 examples, notes, English-only voices, UK voice locale, Chinese labels, IPA parser, validation, escaping, undo, editing, theme, prompt mode, isolated storage');
 

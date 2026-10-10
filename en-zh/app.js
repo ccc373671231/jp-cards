@@ -20,7 +20,9 @@ function validate(raw) {
 }
 function setTab(value) { tab=value; document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab)); $('cards').hidden=tab==='add'; $('add-panel').hidden=tab!=='add'; render(); }
 function render() {
-  $('prompt-mode').value=state.prompt;$('ipa-toggle').checked=state.ipa; $('master-toggle').checked=state.hideMaster; document.documentElement.dataset.theme=state.dark?'dark':'light';
+  $('prompt-zh').setAttribute('aria-pressed',String(state.prompt==='zh'));
+  $('prompt-en').setAttribute('aria-pressed',String(state.prompt==='en'));
+  $('ipa-toggle').checked=state.ipa; $('master-toggle').checked=state.hideMaster; document.documentElement.dataset.theme=state.dark?'dark':'light';
   document.documentElement.dataset.sky=state.starTheme?'on':'off';
   $('theme').textContent=state.starTheme?'☀ 晨光':'✦ 星空';
   $('batch-tools').hidden=!batch; $('selected-count').textContent=`已选：${selected.size}`;
@@ -45,7 +47,7 @@ $('cards').onchange=e=>{if(e.target.dataset.select){e.target.checked?selected.ad
 function removeCards(ids){if(!ids.length||!confirm(`删除 ${ids.length} 张卡片？`))return;undoState=[...state.deleted];state.deleted=[...new Set([...state.deleted,...ids])];selected.clear();save();render();$('undo').hidden=false;}
 $('undo').onclick=()=>{if(undoState){state.deleted=undoState;undoState=null;save();render();$('undo').hidden=true;}};
 $('batch').onclick=()=>{batch=!batch;selected.clear();render();};$('cancel-batch').onclick=()=>{batch=false;selected.clear();render();};$('select-all').onclick=()=>{selected=new Set(cards().map(c=>c.id));render();};$('delete-selected').onclick=()=>removeCards([...selected]);
-$('prompt-mode').onchange=e=>{state.prompt=e.target.value;save();render();};
+for(const mode of ['zh','en'])$('prompt-'+mode).onclick=()=>{state.prompt=mode;save();render();};
 $('ipa-toggle').onchange=e=>{state.ipa=e.target.checked;save();render();};$('master-toggle').onchange=e=>{state.hideMaster=e.target.checked;save();render();};$('theme').onclick=()=>{state.starTheme=!state.starTheme;state.dark=false;save();render();};
 $('cancel-edit').onclick=()=>{editId=null;$('card-form').reset();setTab('pattern');};
 $('card-form').onsubmit=e=>{e.preventDefault();const f=e.target;try{const c=validate({id:editId||uid(),en:f.elements.en.value,zh:f.elements.zh.value,ipa:f.elements.ipa.value,notes:f.elements.notes.value,intent:f.elements.intent.value,pattern:f.elements.pattern.value,scenes:f.elements.scenes.value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),vocab:vocab(f.elements.vocab.value)});state.userCards=state.userCards.filter(x=>x.id!==c.id);state.userCards.push(c);state.deleted=state.deleted.filter(x=>x!==c.id);save();editId=null;f.reset();setTab('pattern');notice('卡片已保存。');}catch(error){notice(error.message);}};
